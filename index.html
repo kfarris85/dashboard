@@ -135,6 +135,26 @@ a{color:var(--home)}
 .leaders{display:grid;gap:4px;font-size:13px}
 .leaders div span{color:var(--muted)}
 .sk{color:var(--muted);font-size:13px}
+.search{position:relative;display:flex}
+.search input{width:100%;font:500 15px var(--f-body);color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 36px 9px 12px}
+.search input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.search input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+.search button{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);font-size:15px;width:30px;height:30px}
+.sres{padding-top:14px;display:grid;gap:10px}
+.sres .panel{display:grid;gap:8px}
+.plist{display:grid;gap:6px}
+.pbtn{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;text-align:left;width:100%;border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:6px 10px}
+.pbtn img,.pbtn .ph{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--line)}
+.pbtn b{display:block;font:700 17px/1.1 var(--f-display)}
+.pbtn span{font-size:12.5px;color:var(--muted)}
+.pbtn em{font:700 10px var(--f-body);font-style:normal;letter-spacing:.08em;color:var(--muted)}
+.phead{display:flex;gap:12px;align-items:center}
+.phead img{width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--line)}
+.phead h3{margin:0}
+.linkbtn{border:0;background:none;padding:0;color:var(--home);font:inherit;text-decoration:underline;cursor:pointer}
+.plink{border:0;background:none;padding:0;color:var(--ink);font:600 13px var(--f-body);text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer}
+.sl{font-size:12.5px;color:var(--muted)} .sl b{color:var(--ink);font-weight:600}
+.injcols li{line-height:1.35}
 .tab.hist-tab{border-color:var(--accent)}
 .tab.hist-tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
 .hist{display:grid;gap:18px;padding-bottom:40px}
@@ -177,6 +197,7 @@ a{color:var(--home)}
       <div class="upd"><span id="upd">Loading…</span><button id="refresh" type="button">Refresh</button></div>
     </div>
     <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="search"><input id="q" type="search" placeholder="Search players or teams" autocomplete="off" enterkeyhint="search" aria-label="Search players or teams"><button id="qclear" type="button" aria-label="Clear search" hidden>✕</button></div>
     <div class="row2" id="row2">
       <div class="nav"><button id="prev" type="button" aria-label="Previous">‹</button><span class="lbl" id="navlbl">—</span><button id="next" type="button" aria-label="Next">›</button><button id="today" type="button" style="width:auto;padding:0 10px;font-size:12px">Now</button></div>
       <div class="filters" id="filters">
@@ -190,6 +211,7 @@ a{color:var(--home)}
   </div>
 </header>
 <main class="wrap">
+  <section class="sres" id="sres" hidden></section>
   <section class="summary" id="summary"></section>
   <div class="note" id="note"></div>
   <div id="err"></div>
@@ -206,6 +228,8 @@ const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
 const API=PROXY?'/api/espn/':'https://site.api.espn.com/apis/site/v2/sports/';
 const GEO=PROXY?'/api/geo?':'https://geocoding-api.open-meteo.com/v1/search?';
 const WX=PROXY?'/api/wx?':'https://api.open-meteo.com/v1/forecast?';
+const WEBAPI=PROXY?'/api/espnweb/':'https://site.web.api.espn.com/apis/';
+const LG_BY_ID={'28':'nfl','23':'cfb','46':'nba','10':'mlb'};
 const LEAGUES={
   nfl:{label:'NFL',path:'football/nfl',web:'nfl',nav:'week',wx:true,stats:['totalYards','netPassingYards','rushingYards','firstDowns','thirdDownEff','turnovers','totalPenaltiesYards','possessionTime']},
   cfb:{label:'College FB',path:'football/college-football',web:'college-football',nav:'week',wx:true,params:{groups:'80',limit:'400'},stats:['totalYards','netPassingYards','rushingYards','firstDowns','thirdDownEff','turnovers','totalPenaltiesYards','possessionTime']},
@@ -308,6 +332,26 @@ function parseSum(d){
   o.inj=(d.injuries||[]).map(t=>({id:t.team&&t.team.id,abbr:t.team&&t.team.abbreviation,list:(t.injuries||[]).map(i=>({name:(i.athlete&&(i.athlete.displayName||i.athlete.shortName))||'',pos:(i.athlete&&i.athlete.position&&i.athlete.position.abbreviation)||'',status:i.status||(i.type&&i.type.description)||'',what:(i.details&&(i.details.type||i.details.detail))||''}))}));
   o.stats=((d.boxscore&&d.boxscore.teams)||[]).map(t=>({id:t.team&&t.team.id,abbr:t.team&&t.team.abbreviation,stats:(t.statistics||[]).map(s=>({k:s.name,label:s.label||s.abbreviation||s.name,v:s.displayValue}))}));
   o.leaders=(d.leaders||[]).map(t=>({abbr:t.team&&t.team.abbreviation,cats:(t.leaders||[]).slice(0,3).map(c=>({cat:c.displayName||c.name,who:c.leaders&&c.leaders[0]&&c.leaders[0].athlete&&c.leaders[0].athlete.displayName,val:c.leaders&&c.leaders[0]&&c.leaders[0].displayValue})).filter(c=>c.who)}));
+  o.top=[];
+  const pickStats=(labels,stats,want)=>want.map(l=>{const i=labels.indexOf(l);return i>=0&&stats[i]!=null&&stats[i]!==''?{k:l,v:stats[i]}:null}).filter(Boolean);
+  const nm=a=>(a&&a.athlete&&(a.athlete.displayName||a.athlete.shortName))||'';
+  const ps=a=>(a&&a.athlete&&a.athlete.position&&a.athlete.position.abbreviation)||'';
+  for(const t of ((d.boxscore&&d.boxscore.players)||[])){
+    const cats=t.statistics||[]; const players=[]; const abbr=t.team&&t.team.abbreviation;
+    if(cats.some(c=>c.name==='passing')){
+      const want={passing:['C/ATT','YDS','TD','INT'],rushing:['CAR','YDS','TD','AVG'],receiving:['REC','YDS','TD','TGTS']};
+      for(const k of ['passing','rushing','receiving']){ const c=cats.find(x=>x.name===k); const a=c&&(c.athletes||[]).find(x=>x.stats&&x.stats.length);
+        if(a) players.push({name:nm(a),pos:ps(a),role:k,line:pickStats(c.labels||[],a.stats,want[k])}); }
+    } else if(cats[0]){
+      const c=cats[0], L=c.labels||[]; const ip=L.indexOf('PTS');
+      let ath=(c.athletes||[]).filter(a=>a.stats&&a.stats.length&&!a.didNotPlay);
+      let st=ath.filter(a=>a.starter); if(st.length<3) st=ath;
+      if(ip>=0) st=[...st].sort((x,y)=>(parseFloat(y.stats[ip])||0)-(parseFloat(x.stats[ip])||0));
+      const want=ip>=0?['MIN','PTS','REB','AST','FG','3PT']:['H-AB','R','H','RBI','HR','BB'];
+      st.slice(0,3).forEach(a=>players.push({name:nm(a),pos:ps(a),role:a.starter?'starter':'',line:pickStats(L,a.stats,want)}));
+    }
+    if(players.length) o.top.push({abbr,players});
+  }
   if(Array.isArray(d.plays)&&d.plays.length) o.last=d.plays[d.plays.length-1].text;
   if(d.gameInfo&&d.gameInfo.weather) o.espnWx=d.gameInfo.weather;
   return o;
@@ -345,7 +389,13 @@ async function enrich(tok){
 function repaint(id){ const g=S.events.find(x=>x.id===id); const el=document.querySelector('[data-id="'+id+'"]'); if(g&&el&&visible(g)) el.outerHTML=card(g); }
 
 /* ---------- render ---------- */
-function visible(g){ const p=findPick(g);
+function matchGame(g,q){
+  const hay=[g.home.full,g.home.abbr,g.home.loc,g.home.name,g.away.full,g.away.abbr,g.away.loc,g.away.name];
+  const s=S.sum[g.id];
+  if(s){ (s.top||[]).forEach(t=>t.players.forEach(p=>hay.push(p.name))); (s.leaders||[]).forEach(t=>t.cats.forEach(c=>hay.push(c.who))); (s.inj||[]).forEach(t=>t.list.forEach(i=>hay.push(i.name))); }
+  return hay.some(h=>h&&String(h).toLowerCase().includes(q));
+}
+function visible(g){ if(S.q&&!matchGame(g,S.q)) return false; const p=findPick(g);
   switch(S.filter){case 'live':return g.state==='in';case 'best':return !!(p&&p.best);case 'dis':return !!(p&&p.agrees===false);case 'picked':return !!p;default:return true;} }
 function render(){
   $('tabs').innerHTML=Object.entries(LEAGUES).map(([k,v])=>`<button class="tab" role="tab" type="button" data-l="${k}" aria-selected="${k===S.league}">${v.label}</button>`).join('')+`<button class="tab hist-tab" role="tab" type="button" data-l="hist" aria-selected="${S.league==='hist'}">History</button>`;
@@ -435,7 +485,12 @@ function detail(g,p){
     const A=byK(a),B=byK(b); let keys=L.stats.filter(k=>A[k]||B[k]); if(keys.length<3) keys=a.stats.slice(0,8).map(x=>x.k);
     out.push(`<div><h4>Team stats</h4><div class="tbl"><table><thead><tr><th></th><th>${esc(a.abbr)}</th><th>${esc(b.abbr)}</th></tr></thead><tbody>${keys.map(k=>`<tr><td>${esc((A[k]||B[k]).label)}</td><td>${esc(A[k]?A[k].v:'')}</td><td>${esc(B[k]?B[k].v:'')}</td></tr>`).join('')}</tbody></table></div></div>`);
   }
-  if(s.leaders&&s.leaders.some(t=>t.cats.length)) out.push(`<div><h4>Leaders</h4><div class="leaders">${s.leaders.map(t=>t.cats.map(c=>`<div><b>${esc(t.abbr)}</b> ${esc(c.who)} <span>${esc(c.cat)}: ${esc(c.val)}</span></div>`).join('')).join('')}</div></div>`);
+  const plink=n=>`<button class="plink" type="button" data-pname="${esc(n)}">${esc(n)}</button>`;
+  if(s.top&&s.top.length){
+    out.push(`<div><h4>Top 3 players · ${g.state==='in'?'live':'this game'}</h4><div class="injcols">${s.top.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.players.map(p=>`<li>${plink(p.name)} <span>${esc(p.pos)}${p.role?' · '+esc(p.role):''}</span><br><span class="sl">${p.line.map(x=>`${esc(x.k)} <b>${esc(x.v)}</b>`).join(' · ')||'—'}</span></li>`).join('')}</ul></div>`).join('')}</div></div>`);
+  } else if(s.leaders&&s.leaders.some(t=>t.cats.length)){
+    out.push(`<div><h4>Top 3 players · season leaders</h4><div class="injcols">${s.leaders.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.cats.map(c=>`<li>${plink(c.who)}<br><span class="sl">${esc(c.cat)}: <b>${esc(c.val)}</b></span></li>`).join('')}</ul></div>`).join('')}</div><p class="muted" style="margin-top:6px;font-size:12.5px">Game stats replace these at kickoff.</p></div>`);
+  }
   if(s.inj&&s.inj.some(t=>t.list.length)){
     const cls=st=>/out|reserve/i.test(st)?'st-out':/doubt|quest|day/i.test(st)?'st-q':'';
     out.push(`<div><h4>Injury report</h4><div class="injcols">${s.inj.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.list.slice(0,12).map(i=>`<li>${esc(i.name)} <span>${esc(i.pos)}</span> · <span class="${cls(i.status)}">${esc(i.status)}</span>${i.what?` <span>(${esc(i.what)})</span>`:''}</li>`).join('')||'<li><span>None listed</span></li>'}${t.list.length>12?`<li><span>+${t.list.length-12} more</span></li>`:''}</ul></div>`).join('')}</div></div>`);
@@ -467,6 +522,80 @@ $('refresh').onclick=()=>{ if(S.league==='hist'){S.hRows=null;loadHistory();retu
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&S.league!=='hist'&&S.last&&Date.now()-S.last>30000) loadBoard(); });
 setInterval(()=>{ if(S.league==='hist'){ $('upd').textContent=S.hBusy?'Grading recent picks…':'Pick history'; return; } if(!S.last) return; const s=Math.max(0,Math.round((S.next-Date.now())/1000));
   $('upd').textContent=`Updated ${S.last.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'})} · next in ${s}s`; },1000);
+
+/* ---------- search: games + players ---------- */
+let qTimer=null, qSeq=0;
+function setQuery(v){ $('q').value=v; S.q=v.trim().toLowerCase(); $('qclear').hidden=!S.q; if(S.league!=='hist') render(); }
+$('q').addEventListener('input',e=>{
+  setQuery(e.target.value); clearTimeout(qTimer);
+  if(S.q.length<3){ $('sres').hidden=true; return; }
+  qTimer=setTimeout(()=>searchPlayers(S.q),400);
+});
+$('q').addEventListener('keydown',e=>{ if(e.key==='Escape'){ setQuery(''); $('sres').hidden=true; } if(e.key==='Enter'){ clearTimeout(qTimer); if(S.q.length>=2) searchPlayers(S.q); e.target.blur(); } });
+$('qclear').onclick=()=>{ setQuery(''); $('sres').hidden=true; $('q').focus(); };
+function gameNote(){
+  if(!S.q||S.league==='hist') return '';
+  const n=S.events.filter(g=>matchGame(g,S.q)).length;
+  return `<p class="sub" style="margin:0">${n?`${n} ${LEAGUES[S.league].label} game${n===1?'':'s'} below match “${esc(S.q)}”.`:`No ${LEAGUES[S.league].label} games on this ${LEAGUES[S.league].nav==='day'?'date':'week'} match “${esc(S.q)}”.`}</p>`;
+}
+async function searchPlayers(q,autoName){
+  const my=++qSeq; const box=$('sres'); box.hidden=false;
+  box.innerHTML=`<div class="panel">${gameNote()}<p class="muted" style="margin:0">Searching players…</p></div>`;
+  let found=[], err=null;
+  try{
+    const d=await getJSON(WEBAPI+'common/v3/search?limit=10&type=player&query='+encodeURIComponent(q),12000);
+    const seen=new Set();
+    (function walk(o){ if(!o||typeof o!=='object') return; if(Array.isArray(o)){o.forEach(walk);return;}
+      const m=/l:(\d+)~a:(\d+)/.exec(o.uid||'');
+      if(m&&o.displayName&&LG_BY_ID[m[1]]&&!seen.has(m[2])){ seen.add(m[2]);
+        found.push({id:m[2],lg:LG_BY_ID[m[1]],name:o.displayName,sub:o.subtitle||o.description||'',img:(o.image&&(o.image.default||o.image.href))||(o.headshot&&o.headshot.href)||''}); }
+      for(const k in o) if(o[k]&&typeof o[k]==='object') walk(o[k]); })(d);
+  }catch(e){ err=e.name==='AbortError'?'timed out':e.message; }
+  if(my!==qSeq) return;
+  if(autoName){ const hit=found.find(f=>f.name.toLowerCase()===autoName.toLowerCase())||(found.length===1?found[0]:null); if(hit) return openPlayer(hit); }
+  box.innerHTML=`<div class="panel">${gameNote()}
+    ${found.length?`<h3>Players</h3><div class="plist">${found.map(f=>`<button class="pbtn" type="button" data-player="${f.lg}|${f.id}|${esc(f.name)}|${esc(f.img)}">${f.img?`<img src="${esc(f.img)}" alt="" loading="lazy">`:'<span class="ph"></span>'}<span><b>${esc(f.name)}</b><span>${esc(f.sub)}</span></span><em>${HLG[f.lg]||''}</em></button>`).join('')}</div>`
+    :`<p class="muted" style="margin:0">${err?`Player search couldn’t reach ESPN (${esc(err)}).`:`No NFL, college football, NBA or MLB players match “${esc(q)}”.`}</p>`}</div>`;
+}
+const val=(o,...ks)=>{for(const k of ks){ if(o==null) return undefined; o=o[k]; } return o;};
+async function openPlayer(f){
+  const my=++qSeq; const box=$('sres'); box.hidden=false; box.scrollIntoView({block:'start',behavior:'smooth'});
+  box.innerHTML=`<div class="panel"><p class="muted" style="margin:0">Loading ${esc(f.name)}…</p></div>`;
+  const L=LEAGUES[f.lg]; const [sport,league]=L.path.split('/');
+  const base=WEBAPI+'common/v3/sports/'+sport+'/'+league+'/athletes/'+f.id;
+  const [info,ov]=await Promise.allSettled([getJSON(base,12000),getJSON(base+'/overview',12000)]);
+  if(my!==qSeq) return;
+  const a=(info.status==='fulfilled'&&(info.value.athlete||info.value))||{};
+  const o=ov.status==='fulfilled'?ov.value:{};
+  const team=val(a,'team','displayName')||'', pos=val(a,'position','displayName')||val(a,'position','abbreviation')||'';
+  const head=val(a,'headshot','href')||f.img||'';
+  const inj=(a.injuries||[])[0]; const injTxt=inj?(inj.status||val(inj,'type','description')||''):'';
+  const out=[`<div class="phead">${head?`<img src="${esc(head)}" alt="">`:''}<div><h3>${esc(a.displayName||f.name)}</h3><p class="sub" style="margin:0">${esc([pos,team,a.displayJersey?'#'+String(a.displayJersey).replace('#',''):''].filter(Boolean).join(' · '))}${injTxt?` · <span class="st-out">${esc(injTxt)}</span>`:''}</p></div></div>`];
+  const st=o.statistics;
+  if(st&&st.labels&&st.splits&&st.splits.length){
+    out.push(`<div><h4 style="margin:6px 0">Season stats</h4><div class="tbl"><table class="btable"><thead><tr><th></th>${st.labels.map(l=>`<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>${st.splits.slice(0,3).map(sp=>`<tr><td>${esc(sp.displayName||'')}</td>${(sp.stats||[]).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`);
+  }
+  const gl=o.gameLog; const gst=gl&&gl.statistics&&gl.statistics[0];
+  if(gst&&gst.labels&&gst.events&&gst.events.length){
+    const evs=gl.events||{};
+    out.push(`<div><h4 style="margin:6px 0">Recent games</h4><div class="tbl"><table class="btable"><thead><tr><th>Game</th>${gst.labels.map(l=>`<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>${gst.events.slice(0,5).map(e=>{const ev=evs[e.eventId]||{}; const dt=ev.gameDate?new Date(ev.gameDate).toLocaleDateString([], {month:'numeric',day:'numeric'}):''; const opp=[ev.atVs,val(ev,'opponent','abbreviation')].filter(Boolean).join(' '); const res=[ev.gameResult,ev.score].filter(Boolean).join(' ');
+      return `<tr><td>${esc([dt,opp,res].filter(Boolean).join(' · '))}</td>${(e.stats||[]).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`}).join('')}</tbody></table></div></div>`);
+  }
+  if(out.length===1) out.push(`<p class="muted" style="margin:0">ESPN didn’t return stats for this player${ov.status==='rejected'?` (${esc(ov.reason&&ov.reason.message||'error')})`:''}.</p>`);
+  const tName=val(a,'team','shortDisplayName')||val(a,'team','name')||'';
+  out.push(`<p style="margin:0;display:flex;gap:16px;flex-wrap:wrap">${tName?`<button class="linkbtn" type="button" data-pteam="${f.lg}|${esc(tName)}">Show ${esc(tName)} games</button>`:''}<a href="https://www.espn.com/${L.web}/player/_/id/${esc(f.id)}" target="_blank" rel="noopener">Full profile on ESPN</a><button class="linkbtn" type="button" data-pclose="1">Close</button></p>`);
+  box.innerHTML=`<div class="panel">${out.join('')}</div>`;
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-player],[data-pname],[data-pteam],[data-pclose]'); if(!t) return;
+  if(t.dataset.player){ const [lg,id,name,img]=t.dataset.player.split('|'); openPlayer({lg,id,name,img}); }
+  else if(t.dataset.pname){ const n=t.dataset.pname; $('q').value=n; $('qclear').hidden=false; searchPlayers(n,n); }
+  else if(t.dataset.pteam){ const [lg,tm]=t.dataset.pteam.split('|'); $('sres').hidden=true;
+    if(S.league!==lg){ S.league=lg; store.set('league',lg); S.token++; clearTimeout(S.timer); S.events=[]; S.date=null; S.week=null; S.seasontype=null; S.weekNum=null; S.open.clear(); setQuery(tm); loadBoard(); }
+    else setQuery(tm);
+    window.scrollTo({top:0,behavior:'smooth'}); }
+  else if(t.dataset.pclose){ $('sres').hidden=true; }
+});
 
 /* ---------- pick history ---------- */
 const HLG={nfl:'NFL',cfb:'CFB',nba:'NBA',mlb:'MLB'};
