@@ -158,6 +158,16 @@ a{color:var(--home)}
 .sl{font-size:12.5px;color:var(--muted)} .sl b{color:var(--ink);font-weight:600}
 .injcols li{line-height:1.35}
 .tab.hist-tab{border-color:var(--accent)}
+.mvs{display:grid;gap:4px;margin-top:4px}
+.mv{font-size:12.5px;font-weight:600;border-radius:6px;padding:4px 8px;background:var(--panel2);border:1px solid var(--line)}
+.mv.good{color:var(--good);border-color:var(--good);background:var(--good-soft)} .mv.bad{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
+.star-row{display:grid;gap:8px}
+.star-row.s-in{border-color:var(--live)}
+.prop{display:grid;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.prop .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.prop select,.prop input{font:600 15px var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.prop input{width:90px}
+.prop .out{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
 .tab.hist-tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
 .hist{display:grid;gap:18px;padding-bottom:40px}
 .hist .hchips{display:flex;gap:6px;flex-wrap:wrap}
@@ -243,7 +253,7 @@ const STATES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California
 const WMO={0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Fog',51:'Drizzle',53:'Drizzle',55:'Drizzle',56:'Freezing drizzle',57:'Freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow',80:'Showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Snow showers',95:'Thunderstorms',96:'Thunderstorms',99:'Thunderstorms'};
 
 const store={get(k){try{return localStorage.getItem('mgc_'+k)}catch(e){return null}},set(k,v){try{localStorage.setItem('mgc_'+k,v)}catch(e){}}};
-const S={league:(LEAGUES[store.get('league')]||store.get('league')==='hist')?store.get('league'):'nfl',hLg:'all',hRows:null,hLive:0,hBusy:false,filter:'all',date:null,week:null,seasontype:null,events:[],open:new Set(),sum:{},wx:{},geo:{},err:null,last:null,timer:null,tick:null,next:0,token:0,weekNum:null};
+const S={league:(LEAGUES[store.get('league')]||['hist','stars'].includes(store.get('league')))?store.get('league'):'nfl',hLg:'all',hRows:null,hLive:0,hBusy:false,filter:'all',date:null,week:null,seasontype:null,events:[],open:new Set(),sum:{},wx:{},geo:{},err:null,last:null,timer:null,tick:null,next:0,token:0,weekNum:null};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
@@ -401,10 +411,10 @@ function matchGame(g,q){
 function visible(g){ if(S.q&&!matchGame(g,S.q)) return false; const p=findPick(g);
   switch(S.filter){case 'live':return g.state==='in';case 'best':return !!(p&&p.best);case 'dis':return !!(p&&p.agrees===false);case 'picked':return !!p;default:return true;} }
 function render(){
-  $('tabs').innerHTML=Object.entries(LEAGUES).map(([k,v])=>`<button class="tab" role="tab" type="button" data-l="${k}" aria-selected="${k===S.league}">${v.label}</button>`).join('')+`<button class="tab hist-tab" role="tab" type="button" data-l="hist" aria-selected="${S.league==='hist'}">History</button>`;
-  const isH=S.league==='hist';
+  $('tabs').innerHTML=Object.entries(LEAGUES).map(([k,v])=>`<button class="tab" role="tab" type="button" data-l="${k}" aria-selected="${k===S.league}">${v.label}</button>`).join('')+`<button class="tab hist-tab" role="tab" type="button" data-l="stars" aria-selected="${S.league==='stars'}">★ Today</button><button class="tab hist-tab" role="tab" type="button" data-l="hist" aria-selected="${S.league==='hist'}">History</button>`;
+  const isH=S.league==='hist'||S.league==='stars';
   ['row2','summary','note','err','games'].forEach(id=>{$(id).hidden=isH}); $('hist').hidden=!isH;
-  if(isH){ renderHistory(); return; }
+  if(isH){ if(S.league==='stars') renderStars(); else renderHistory(); return; }
   const L=LEAGUES[S.league];
   $('navlbl').textContent=L.nav==='day'?parseYmd(S.date||ymd(new Date())).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}):(S.weekNum!=null?'Week '+S.weekNum:'This week');
   document.querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===S.filter)));
@@ -446,7 +456,7 @@ function modelHTML(g,p){
   if(!p) return ''; const r=grade(g,p);
   const chip=(t,res)=>`<span class="chip ${res||''}">${esc(t)}${res?`<b>${resText(res,g.state)}</b>`:''}</span>`;
   return `<div class="model"><div class="m-head"><span class="m-tag">Model</span>${p.best?'<span class="star">★ Best pick</span>':''}${p.agrees===false?'<span class="dis">Disagrees with Vegas</span>':''}${p.vegas!=null?`<span class="muted">Vegas ${p.vegas}% on pick</span>`:''}</div>
-  <div class="chips">${chip(`${p.pick} ${p.win}% · ${p.conf}`,r.su)}${p.spreadPick?chip('ATS '+p.spreadPick,r.ats):''}${p.lean&&p.total?chip(`${p.lean} ${p.total}${r.totNow!=null&&g.state==='in'?` (${r.totNow} now)`:''}`,r.tot):''}</div></div>`;
+  <div class="chips">${chip(`${p.pick} ${p.win}% · ${p.conf}`,r.su)}${p.spreadPick?chip('ATS '+p.spreadPick,r.ats):''}${p.lean&&p.total?chip(`${p.lean} ${p.total}${r.totNow!=null&&g.state==='in'?` (${r.totNow} now)`:''}`,r.tot):''}</div>${moveHTML(g,p)}</div>`;
 }
 function wxText(g){
   if(LEAGUES[S.league].wx===false) return '';
@@ -507,7 +517,7 @@ function detail(g,p){
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-l],[data-f],[data-more],[data-hl]'); if(!t) return;
   if(t.dataset.hl){ S.hLg=t.dataset.hl; renderHistory(); return; }
-  if(t.dataset.l){ if(t.dataset.l===S.league) return; S.league=t.dataset.l; store.set('league',S.league); S.token++; clearTimeout(S.timer); S.events=[]; S.date=null; S.week=null; S.seasontype=null; S.weekNum=null; S.open.clear(); render(); if(S.league==='hist') loadHistory(); else loadBoard(); }
+  if(t.dataset.l){ if(t.dataset.l===S.league) return; S.league=t.dataset.l; store.set('league',S.league); S.token++; clearTimeout(S.timer); S.events=[]; S.date=null; S.week=null; S.seasontype=null; S.weekNum=null; S.open.clear(); render(); openView(); }
   else if(t.dataset.f){ S.filter=t.dataset.f; render(); }
   else if(t.dataset.more){ const id=t.dataset.more; if(S.open.has(id)) S.open.delete(id); else S.open.add(id);
     const g=S.events.find(x=>x.id===id); repaint(id);
@@ -521,9 +531,9 @@ function step(dir){
 }
 $('prev').onclick=()=>step(-1); $('next').onclick=()=>step(1);
 $('today').onclick=()=>{S.date=null;S.week=null;S.seasontype=null;S.events=[];S.open.clear();render();loadBoard();};
-$('refresh').onclick=()=>{ if(S.league==='hist'){S.hRows=null;loadHistory();return;} S.sum={};loadBoard();};
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&S.league!=='hist'&&S.last&&Date.now()-S.last>30000) loadBoard(); });
-setInterval(()=>{ if(S.league==='hist'){ $('upd').textContent=S.hBusy?'Grading recent picks…':'Pick history'; return; } if(!S.last) return; const s=Math.max(0,Math.round((S.next-Date.now())/1000));
+$('refresh').onclick=()=>{ if(S.league==='hist'){S.hRows=null;loadData().then(loadHistory);return;} if(S.league==='stars'){loadData().then(loadStars);return;} S.sum={};loadBoard();};
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&LEAGUES[S.league]&&S.last&&Date.now()-S.last>30000) loadBoard(); });
+setInterval(()=>{ if(S.league==='hist'){ $('upd').textContent=S.hBusy?'Grading recent picks…':(S.dataUpdated?'Data updated '+S.dataUpdated:'Pick history'); return; } if(S.league==='stars'){ $('upd').textContent=S.stBusy?'Loading scores…':'★ Best Picks'; return; } if(!S.last) return; const s=Math.max(0,Math.round((S.next-Date.now())/1000));
   $('upd').textContent=`Updated ${S.last.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'})} · next in ${s}s`; },1000);
 
 /* ---------- search: games + players ---------- */
@@ -672,6 +682,12 @@ async function openPlayer(f){
       <p class="sub" style="margin:6px 0 0">${def?`Each game counts more the tougher the defense: weight = league average allowed ÷ that opponent’s average allowed, so a defense allowing 10% less than average counts about 10% more. ${sched?`He’s faced ${sched}.`:''}${graded<gl2.rows.length?` ${gl2.rows.length-graded} game${gl2.rows.length-graded===1?'':'s'} vs teams outside ESPN’s standings counted at normal weight.`:''}`:`Couldn’t load opponent defense from ESPN standings, so both rows are straight averages.`}</p></div>`);
     out.push(`<div><h4 style="margin:6px 0">Game log · opponent defense grade</h4><div class="tbl" style="max-height:340px;overflow:auto"><table class="btable"><thead><tr><th>Game</th><th>Opp D</th>${gl2.labels.map(l=>`<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>${gl2.rows.map(r=>{const t=opp(r); const dt=r.date?new Date(r.date).toLocaleDateString([], {month:'numeric',day:'numeric'}):'';
       return `<tr><td>${esc([dt,[r.atVs,r.opp.abbreviation].filter(Boolean).join(' '),[r.res,r.score].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</td><td title="${t?`Allows ${t.pa.toFixed(1)}/game, #${t.rank} of ${def.n}`:''}">${t?`<b class="${'AB'.includes(dGrade(t.rank,def.n))?'good':'DF'.includes(dGrade(t.rank,def.n))?'bad':''}">${dGrade(t.rank,def.n)}</b> <span class="muted">#${t.rank}</span>`:'—'}</td>${gl2.labels.map((l,i)=>`<td>${esc(r.stats[i]==null?'':r.stats[i])}</td>`).join('')}</tr>`}).join('')}</tbody></table></div><p class="sub" style="margin:6px 0 0">A = toughest 20% of defenses by points allowed per game, F = easiest 20%.</p></div>`);
+    S.pctx={labels:gl2.labels,rows:gl2.rows,def,opp,w};
+    const numCols=gl2.labels.map((l,i)=>({l,i})).filter(c=>gl2.rows.filter(r=>/^-?\d+(\.\d+)?$/.test(String(r.stats[c.i]==null?'':r.stats[c.i]).replace(/,/g,''))).length>=Math.ceil(gl2.rows.length*0.6));
+    if(numCols.length){
+      const pref=['PTS','YDS','REC','H','K','REB','AST'].map(x=>numCols.find(c=>c.l===x)).find(Boolean)||numCols[0];
+      out.splice(2,0,`<div class="prop"><h4 style="margin:0">Prop check</h4><div class="row"><select id="propStat" aria-label="Stat">${numCols.map(c=>`<option value="${c.i}"${c===pref?' selected':''}>${esc(c.l)}</option>`).join('')}</select><span class="muted">over</span><input id="propLine" type="number" step="0.5" inputmode="decimal" placeholder="Line" aria-label="Prop line"><span class="muted">this season</span></div><div class="out" id="propOut"><p class="muted" style="margin:0">Type the prop line to see how often he's cleared it.</p></div></div>`);
+    }
     shownLog=true;
   }
   const st=o.statistics;
@@ -688,6 +704,7 @@ async function openPlayer(f){
   const tName=val(a,'team','shortDisplayName')||val(a,'team','name')||'';
   out.push(`<p style="margin:0;display:flex;gap:16px;flex-wrap:wrap">${tName?`<button class="linkbtn" type="button" data-pteam="${f.lg}|${esc(tName)}">Show ${esc(tName)} games</button>`:''}<a href="https://www.espn.com/${L.web}/player/_/id/${esc(f.id)}" target="_blank" rel="noopener">Full profile on ESPN</a><button class="linkbtn" type="button" data-pclose="1">Close</button></p>`);
   box.innerHTML=`<div class="panel">${out.join('')}</div>`;
+  if($('propOut')) propCalc();
 }
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-player],[data-pname],[data-pteam],[data-pclose]'); if(!t) return;
@@ -703,7 +720,12 @@ document.addEventListener('click',e=>{
 /* ---------- pick history ---------- */
 const HLG={nfl:'NFL',cfb:'CFB',nba:'NBA',mlb:'MLB'};
 const hkey=(lg,d,a,h)=>lg+'|'+d+'|'+nrm(a)+'|'+nrm(h);
+const ynMap=v=>{v=String(v==null?'':v).trim(); return v==='✓'?'W':v==='✗'?'L':v==='P'?'P':v==='T'?'T':v==='='?'E':null;};
 function baseHistory(){
+  if(S.histJson&&Array.isArray(S.histJson.rows)&&S.histJson.rows.length){
+    return S.histJson.rows.map(r=>({lg:String(r.lg||'').toLowerCase()==='ncaa'?'cfb':String(r.lg||'').toLowerCase(),date:r.date,away:r.away,home:r.home,pick:r.pick,win:+r.win,vegas:r.vegas===''||r.vegas==null?null:+r.vegas,best:!!r.best,final:r.final||'',
+      res:ynMap(r.result)||'L',ats:ynMap(r.ats),ou:ynMap(r.ou),lean:r.lean||'',clv:r.clv===''||r.clv==null||isNaN(+r.clv)?null:+r.clv,beat:ynMap(r.beat),spreadPick:r.spreadPick||'',src:'tracker'})).filter(r=>r.lg&&r.date&&r.res!=='T');
+  }
   const H=window.PICK_HISTORY||{}; const out=[];
   for(const lg of Object.keys(H)) for(const r of H[lg]) out.push({lg,date:r[0],away:r[1],home:r[2],pick:r[3],win:+r[4],best:!!r[5],res:r[6]?'W':'L',ats:r[7]===1?'W':r[7]===0?'L':r[7]==='P'?'P':null,src:'sheet'});
   return out;
@@ -729,7 +751,7 @@ async function loadHistory(){
         if(!p) continue;
         const k=hkey(lg,p.date,p.away,p.home); if(have.has(k)) continue;
         const r=grade(ev,p); if(!r.su||r.su==='push') continue;
-        have.add(k); S.hRows.push({lg,date:p.date,away:p.away,home:p.home,pick:p.pick,win:+p.win,best:!!p.best,res:r.su==='win'?'W':'L',ats:r.ats==='win'?'W':r.ats==='loss'?'L':r.ats==='push'?'P':null,src:'live'}); S.hLive++;
+        have.add(k); S.hRows.push({lg,date:p.date,away:p.away,home:p.home,pick:p.pick,win:+p.win,vegas:p.vegas!=null?+p.vegas:null,best:!!p.best,res:r.su==='win'?'W':'L',ou:r.tot==='win'?'W':r.tot==='loss'?'L':r.tot==='push'?'P':null,ats:r.ats==='win'?'W':r.ats==='loss'?'L':r.ats==='push'?'P':null,src:'live'}); S.hLive++;
       }
     }catch(e){}
   }));
@@ -739,6 +761,16 @@ const BUCKETS=[[50,55,'50–54%'],[55,60,'55–59%'],[60,65,'60–64%'],[65,70,'
 function rec(rows){ const w=rows.filter(r=>r.res==='W').length, l=rows.length-w; return {w,l,n:rows.length,pct:rows.length?w/rows.length:null,exp:rows.length?rows.reduce((s,r)=>s+r.win,0)/rows.length/100:null}; }
 const pctTxt=p=>p==null?'—':(p*100).toFixed(1)+'%';
 function recCell(r){ return `${r.w}–${r.l}`; }
+function vegasTable(rows){
+  const rs=rows.filter(r=>r.vegas!=null&&!isNaN(r.vegas)); if(!rs.length) return '<p class="muted">No Vegas % on these picks.</p>';
+  const row=(lab,x)=>{const r=rec(x); const a=x.filter(z=>z.ats==='W'||z.ats==='L'); const aw=a.filter(z=>z.ats==='W').length; return `<tr><td>${lab}</td><td>${r.n?recCell(r):'—'}</td><td class="pct">${pctTxt(r.pct)}</td><td>${a.length?`${aw}–${a.length-aw}`:'—'}</td><td class="pct">${a.length?pctTxt(aw/a.length):'—'}</td></tr>`;};
+  return `<div class="tbl"><table class="btable"><thead><tr><th></th><th>Straight up</th><th>Hit</th><th>ATS</th><th>Hit</th></tr></thead><tbody>${row('Agree with Vegas',rs.filter(r=>r.vegas>=50))}${row('Disagree',rs.filter(r=>r.vegas<50))}${row('★ Best picks',rs.filter(r=>r.best))}</tbody></table></div>`;
+}
+function clvTable(rows,clvStat){
+  const lgs=Object.keys(HLG).filter(k=>rows.some(r=>r.lg===k&&r.clv!=null));
+  const row=(lab,x)=>{const c=clvStat(x); if(!c.n) return ''; return `<tr><td>${lab}</td><td>${c.n}</td><td class="pct ${c.avg>0?'good':c.avg<0?'bad':''}">${(c.avg>=0?'+':'')+c.avg.toFixed(2)}</td><td>${c.b}–${c.e}–${c.w}</td><td class="pct">${pctTxt(c.beat)}</td></tr>`;};
+  return `<div class="tbl"><table class="btable"><thead><tr><th></th><th>Games</th><th>Avg CLV</th><th>B–E–W</th><th>Beat %</th></tr></thead><tbody>${lgs.map(k=>row(HLG[k],rows.filter(r=>r.lg===k))).join('')}${row('★ Best picks',rows.filter(r=>r.best))}${row('Other picks',rows.filter(r=>!r.best))}</tbody></table></div><p class="sub" style="margin:6px 0 0">B–E–W = beat, even, worse than the close. Beat % leaves out games where the line didn't move.</p>`;
+}
 function renderHistory(){
   const el=$('hist');
   if(!S.hRows) S.hRows=baseHistory();
@@ -747,10 +779,13 @@ function renderHistory(){
   const tot=rec(rows), best=rec(rows.filter(r=>r.best)), rest=rec(rows.filter(r=>!r.best));
   const atsRows=rows.filter(r=>r.ats==='W'||r.ats==='L'), atsP=rows.filter(r=>r.ats==='P').length;
   const ats={w:atsRows.filter(r=>r.ats==='W').length,l:atsRows.filter(r=>r.ats==='L').length}; ats.pct=atsRows.length?ats.w/atsRows.length:null;
+  const ouRows=rows.filter(r=>r.ou==='W'||r.ou==='L'); const ouR={w:ouRows.filter(r=>r.ou==='W').length,l:ouRows.filter(r=>r.ou==='L').length,n:ouRows.length}; ouR.pct=ouR.n?ouR.w/ouR.n:null;
+  const clvStat=rs=>{const c=rs.filter(r=>r.clv!=null); const b=c.filter(r=>r.beat==='W').length, wl=c.filter(r=>r.beat==='W'||r.beat==='L').length; return {n:c.length,avg:c.length?c.reduce((s,r)=>s+r.clv,0)/c.length:0,beat:wl?b/wl:null,b,e:c.filter(r=>r.beat==='E').length,w:c.filter(r=>r.beat==='L').length};};
+  const clvR=clvStat(rows);
   const sorted=[...rows].sort((a,b)=>b.date.localeCompare(a.date));
   const last10=rec(sorted.slice(0,10));
   const tile=(k,v,s)=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`;
-  const tiles=tile('Overall',recCell(tot),pctTxt(tot.pct)+' · '+tot.n+' picks')+tile('★ Best picks',recCell(best),pctTxt(best.pct)+' · '+best.n+' picks')+tile('Other picks',recCell(rest),pctTxt(rest.pct))+(atsRows.length?tile('Against spread',`${ats.w}–${ats.l}${atsP?'–'+atsP:''}`,pctTxt(ats.pct)+' · NFL & CFB'):'')+tile('Last 10',recCell(last10),pctTxt(last10.pct));
+  const tiles=tile('Overall',recCell(tot),pctTxt(tot.pct)+' · '+tot.n+' picks')+tile('★ Best picks',recCell(best),pctTxt(best.pct)+' · '+best.n+' picks')+tile('Other picks',recCell(rest),pctTxt(rest.pct))+(atsRows.length?tile('Against spread',`${ats.w}–${ats.l}${atsP?'–'+atsP:''}`,pctTxt(ats.pct)+' · NFL & CFB'):'')+tile('Last 10',recCell(last10),pctTxt(last10.pct))+(ouR.n?tile('Over/under leans',`${ouR.w}–${ouR.l}`,pctTxt(ouR.pct)+' · informational'):'')+(clvR.n?tile('Closing-line value',(clvR.avg>=0?'+':'')+clvR.avg.toFixed(2),`beat close ${pctTxt(clvR.beat)} · ${clvR.n} games`):'');
   const bRow=(label,rs)=>{ const r=rec(rs); if(!r.n) return `<tr><td>${label}</td><td>—</td><td>—</td><td>—</td><td class="barcell"></td></tr>`;
     const hit=r.pct*100, ex=r.exp*100, cls=hit>=ex?'good':'bad';
     return `<tr><td>${label}</td><td>${recCell(r)}</td><td class="pct ${cls}">${hit.toFixed(0)}%</td><td class="pct">${ex.toFixed(0)}%</td><td class="barcell"><div class="hbar" title="Hit ${hit.toFixed(1)}% vs expected ${ex.toFixed(1)}%"><i class="${cls}" style="width:${hit}%"></i><b style="left:calc(${Math.min(ex,99.5)}% - 1px)"></b></div></td></tr>`; };
@@ -764,11 +799,105 @@ function renderHistory(){
     <div class="panel"><h3>Record by model win %</h3><p class="sub">Does a 70% pick actually win about 70% of the time? Small groups swing a lot, so read the record next to the percent.</p>${bucketTable(rows)}</div>
     <div class="panel"><h3>★ Best picks by win %</h3><p class="sub">Same view, limited to the games flagged ★ Best Pick.</p>${bucketTable(rows.filter(r=>r.best))}</div>
   </div>
+  <div class="hgrid">
+    <div class="panel"><h3>Model vs Vegas</h3><p class="sub">Agree = the model's pick is also the Vegas favorite. Disagree = the model picked the Vegas underdog.</p>${vegasTable(rows)}</div>
+    <div class="panel"><h3>Closing-line value</h3><p class="sub">${clvR.n?'Points (MLB: win-probability %) the line moved toward the model from pick time to close. Beating the close over time is the best sign the model has a real edge.':'No CLV graded yet for these picks. It fills in as the Season Tracker grades closing lines.'}</p>${clvR.n?clvTable(rows,clvStat):''}</div>
+  </div>
   ${S.hLg==='all'?`<div class="panel"><h3>By sport</h3>${sportTable}</div>`:''}
-  <div class="panel"><h3>Recent picks</h3><p class="sub">${span}. Graded from your Results sheets in Drive${S.hLive?`, plus ${S.hLive} finished game${S.hLive===1?'':'s'} graded live from ESPN`:''}${S.hBusy?' (checking ESPN for newer finals…)':''}. NFL Week 6 is left out because its results were rebuilt, not graded from saved picks.</p><div class="rlist">${recent||'<p class="muted">No graded picks yet.</p>'}</div></div>`;
+  <div class="panel"><h3>Recent picks</h3><p class="sub">${span}. Graded from ${S.histJson?'your Season Tracker sheet':'your Results sheets in Drive'}${S.hLive?`, plus ${S.hLive} finished game${S.hLive===1?'':'s'} graded live from ESPN`:''}${S.hBusy?' (checking ESPN for newer finals…)':''}.${S.histJson?' NFL uses the Wednesday picks, the same as the tracker.':' NFL Week 6 is left out because its results were rebuilt, not graded from saved picks.'}</p><div class="rlist">${recent||'<p class="muted">No graded picks yet.</p>'}</div></div>`;
 }
 
-render(); if(S.league==='hist') loadHistory(); else loadBoard();
+/* ---------- published data files (kept current by the scheduled publish task) ---------- */
+async function loadData(){
+  const get=u=>fetch(u+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
+  const [p,hj]=await Promise.all([get('data/picks.json'),get('data/history.json')]);
+  if(p&&p.leagues){ window.MODEL_PICKS=Object.assign({},window.MODEL_PICKS||{},p.leagues); }
+  if(hj&&Array.isArray(hj.rows)&&hj.rows.length){ S.histJson=hj; S.hRows=null; }
+  const u=(hj&&hj.updated)||(p&&p.updated); if(u){ try{ S.dataUpdated=new Date(u).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){} }
+}
+function openView(){ if(S.league==='hist') loadHistory(); else if(S.league==='stars') loadStars(); else loadBoard(); }
+
+/* ---------- line movement since the pick ---------- */
+function homeSpreadFrom(txt,g){
+  txt=String(txt||'').trim(); if(!txt) return null; if(/^(even|pk|pick)/i.test(txt)) return 0;
+  const m=/^(.*\S)\s+([+-]?\d+(?:\.\d+)?)$/.exec(txt); if(!m) return null;
+  const s=sideOf(m[1],g); if(!s) return null; const n=parseFloat(m[2]); return s==='home'?n:-n;
+}
+function lineMove(g,p){
+  const o=g.odds||{}; const out={};
+  const then=homeSpreadFrom(p.line,g), now=homeSpreadFrom(o.details,g);
+  let side=null; if(p.spreadPick){ const m=/^(.*\S)\s+[+-]?\d/.exec(p.spreadPick); side=m?sideOf(m[1],g):null; } if(!side) side=sideOf(p.pick,g);
+  if(then!=null&&now!=null&&side){ const d=now-then; out.spread={then,now,toward:side==='home'?-d:d}; }
+  const tot=parseFloat(o.overUnder); if(p.total&&!isNaN(tot)&&p.lean){ const d=tot-p.total; out.total={then:p.total,now:tot,toward:/over/i.test(p.lean)?d:-d}; }
+  return out;
+}
+function moveHTML(g,p){
+  if(g.state==='post') return '';
+  const m=lineMove(g,p); const bits=[];
+  const fmt=x=>(x>0?'+':'')+x;
+  if(m.spread&&Math.abs(m.spread.toward)>=1.5){ const good=m.spread.toward>0; bits.push(`<span class="mv ${good?'good':'bad'}">Spread moved ${Math.abs(m.spread.toward)} pts ${good?'toward':'against'} the model (home ${fmt(m.spread.then)} → ${fmt(m.spread.now)})</span>`); }
+  if(m.total&&Math.abs(m.total.toward)>=2){ const good=m.total.toward>0; bits.push(`<span class="mv ${good?'good':'bad'}">Total moved ${Math.abs(m.total.toward)} ${good?'toward':'against'} the ${esc(p.lean)} (${m.total.then} → ${m.total.now})</span>`); }
+  return bits.length?`<div class="mvs">${bits.join('')}</div>`:'';
+}
+
+/* ---------- prop check ---------- */
+function propCalc(){
+  const c=S.pctx; const out=$('propOut'); if(!c||!out) return;
+  const i=+$('propStat').value, line=parseFloat($('propLine').value);
+  const vals=c.rows.map(r=>({r,v:parseFloat(String(r.stats[i]==null?'':r.stats[i]).replace(/,/g,''))})).filter(x=>!isNaN(x.v));
+  if(!vals.length){ out.innerHTML='<p class="muted" style="margin:0">No games with this stat.</p>'; return; }
+  const sw=vals.reduce((s,x)=>s+c.w(x.r),0); const wavg=vals.reduce((s,x)=>s+c.w(x.r)*x.v,0)/sw;
+  const avg=vals.reduce((s,x)=>s+x.v,0)/vals.length;
+  const box=(k,v,s,cls)=>`<div class="tile"><div class="k">${k}</div><div class="v ${cls||''}" style="font-size:22px">${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`;
+  let html=box('Opp-weighted avg',wavg.toFixed(1),`straight ${avg.toFixed(1)}`);
+  if(isNaN(line)){ out.innerHTML=html+'<p class="muted" style="margin:0;align-self:center">Enter a line to see hit rates.</p>'; return; }
+  const hit=xs=>{const n=xs.length, o=xs.filter(x=>x.v>line).length; return {n,o,pct:n?o/n:null};};
+  const all=hit(vals), last5=hit(vals.slice(0,5));
+  const g=x=>{const t=c.opp(x.r); return t&&c.def?dGrade(t.rank,c.def.n):null;};
+  const tough=hit(vals.filter(x=>'AB'.includes(g(x)||'-'))), soft=hit(vals.filter(x=>'DF'.includes(g(x)||'-')));
+  const fmt=h=>h.n?`${h.o} of ${h.n}`:'no games';
+  const cls=h=>h.pct==null?'':h.pct>=0.6?'good':h.pct<=0.4?'bad':'';
+  html+=box('Over '+line,pctTxt(all.pct),fmt(all),cls(all))+box('Last 5',pctTxt(last5.pct),fmt(last5),cls(last5))+box('vs tough D (A–B)',pctTxt(tough.pct),fmt(tough),cls(tough))+box('vs soft D (D–F)',pctTxt(soft.pct),fmt(soft),cls(soft));
+  html+=`<div class="tile"><div class="k">Edge vs line</div><div class="v ${wavg>line?'good':'bad'}" style="font-size:22px">${(wavg-line>=0?'+':'')+(wavg-line).toFixed(1)}</div><div class="s">weighted avg − line</div></div>`;
+  out.innerHTML=html;
+}
+document.addEventListener('input',e=>{ if(e.target&&(e.target.id==='propLine'||e.target.id==='propStat')) propCalc(); });
+document.addEventListener('change',e=>{ if(e.target&&e.target.id==='propStat') propCalc(); });
+
+/* ---------- ★ Today: every Best Pick across sports ---------- */
+async function loadStars(){
+  const MP=window.MODEL_PICKS||{}; const today=new Date(); today.setHours(0,0,0,0);
+  const lim=new Date(today); lim.setDate(lim.getDate()+3);
+  const list=[];
+  for(const lg of Object.keys(LEAGUES)){ const P=MP[lg]; if(!P||!P.games) continue;
+    for(const p of P.games){ if(!p.best||!p.date) continue; const d=new Date(p.date+'T12:00:00'); if(d<today||d>lim) continue; list.push({lg,p}); } }
+  S.stars=list; S.stEv={}; renderStars();
+  const tasks=[...new Set(list.map(x=>x.lg+'|'+x.p.date.replace(/-/g,'')))]; if(!tasks.length) return;
+  S.stBusy=true; const tok=S.token;
+  await Promise.all(tasks.map(async t=>{ const [lg,d]=t.split('|'); const L=LEAGUES[lg]; const q=new URLSearchParams(L.params||{}); q.set('dates',d);
+    try{ const data=await getJSON(API+L.path+'/scoreboard?'+q,15000); for(const ev of (data.events||[]).map(norm)) S.stEv[lg+'|'+ev.id]=ev; }catch(e){} }));
+  S.stBusy=false; if(tok===S.token&&S.league==='stars') renderStars();
+}
+function renderStars(){
+  const el=$('hist'); const list=S.stars||[];
+  const rows=list.map(({lg,p})=>{
+    const ev=Object.values(S.stEv||{}).find(e=>e&&(p.id?e.id===p.id:(teamIs(p.away,e.away)&&teamIs(p.home,e.home))));
+    const when=ev?ev.date:new Date(p.date+'T12:00:00'); return {lg,p,ev,when};
+  }).sort((a,b)=>a.when-b.when);
+  const body=rows.map(({lg,p,ev})=>{
+    let status=new Date(p.date+'T12:00:00').toLocaleDateString([], {weekday:'short',month:'numeric',day:'numeric'}), res='', score='';
+    if(ev){ status=ev.state==='pre'?fmtKick(ev.date):ev.detail; if(ev.state!=='pre'){ score=`${esc(ev.away.abbr)} ${esc(ev.away.score)} – ${esc(ev.home.abbr)} ${esc(ev.home.score)}`; const r=grade(ev,p); if(r.su) res=ev.state==='post'?(r.su==='win'?'W':'L'):(r.su==='win'?'ahead':'behind'); } }
+    const mv=ev?moveHTML(ev,p):'';
+    return `<div class="panel star-row ${ev&&ev.state==='in'?'s-in':''}"><div class="m-head"><span class="m-tag">${HLG[lg]}</span><span class="status">${esc(status)}</span>${res?`<span class="res ${res==='W'||res==='ahead'?'W':'L'}">${esc(res)}</span>`:''}</div>
+      <div><b style="font:700 19px var(--f-display)">${esc(p.away)} @ ${esc(p.home)}</b>${score?` <span class="muted">· ${score}</span>`:''}</div>
+      <div class="chips"><span class="chip">${esc(p.pick)} ${p.win}%</span>${p.line?`<span class="chip">Line ${esc(p.line)}</span>`:''}${p.spreadPick?`<span class="chip">ATS ${esc(p.spreadPick)}</span>`:''}${p.vegas!=null?`<span class="chip">Vegas ${p.vegas}%</span>`:''}</div>${mv}
+      ${p.why?`<p class="sub" style="margin:0">${esc(p.why)}</p>`:''}</div>`;
+  }).join('');
+  el.innerHTML=`<div style="padding-top:14px" class="sub">★ Best Picks from today through the next 3 days, all sports, in kickoff order. ${S.stBusy?'Loading live scores…':''}</div>${body||'<div class="empty">No ★ Best Picks in the next 3 days yet. They appear as soon as a model run publishes them.</div>'}`;
+}
+
+loadData().then(()=>{ render(); openView(); });
+render();
 })();
 </script>
 </body>
