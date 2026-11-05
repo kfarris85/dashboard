@@ -135,6 +135,38 @@ a{color:var(--home)}
 .leaders{display:grid;gap:4px;font-size:13px}
 .leaders div span{color:var(--muted)}
 .sk{color:var(--muted);font-size:13px}
+.tab.hist-tab{border-color:var(--accent)}
+.tab.hist-tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.hist{display:grid;gap:18px;padding-bottom:40px}
+.hist .hchips{display:flex;gap:6px;flex-wrap:wrap}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.panel h3{margin:0 0 4px;font:700 18px/1.1 var(--f-display);letter-spacing:.04em;text-transform:uppercase}
+.panel .sub{margin:0 0 10px;font-size:13px;color:var(--muted);max-width:70ch}
+.pct{font-variant-numeric:tabular-nums}
+.good{color:var(--good)} .bad{color:var(--bad)}
+.btable{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.btable th,.btable td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.btable th:first-child,.btable td:first-child{text-align:left}
+.btable thead th{font:700 12px var(--f-display);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.btable td.barcell{width:38%;min-width:80px}
+@media (max-width:520px){.btable td.barcell,.btable th:last-child:empty{display:none}.legend span:first-child::before{display:none}}
+.hbar{position:relative;height:10px;border-radius:5px;background:var(--panel2);border:1px solid var(--line)}
+.hbar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--home)}
+.hbar i.good{background:var(--good)} .hbar i.bad{background:var(--bad)}
+.hbar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:var(--good)}
+.legend span.exp::before{width:2px;background:var(--ink)}
+.rlist{display:grid;gap:0}
+.rrow{display:grid;grid-template-columns:62px 1fr auto auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.rrow .d{font:600 12px var(--f-mono);color:var(--muted)}
+.rrow .m{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .m b{font-weight:700}
+.rrow .lg{font:700 10px var(--f-body);letter-spacing:.08em;color:var(--muted);margin-right:6px}
+.rrow .w{font:600 13px var(--f-mono);color:var(--muted)}
+.res{font:700 12px/1 var(--f-body);border-radius:4px;padding:4px 7px;min-width:26px;text-align:center}
+.res.W{background:var(--good-soft);color:var(--good)} .res.L{background:var(--bad-soft);color:var(--bad)}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px;align-items:start}
 </style>
 </head>
 <body>
@@ -145,7 +177,7 @@ a{color:var(--home)}
       <div class="upd"><span id="upd">Loading…</span><button id="refresh" type="button">Refresh</button></div>
     </div>
     <div class="tabs" role="tablist" id="tabs"></div>
-    <div class="row2">
+    <div class="row2" id="row2">
       <div class="nav"><button id="prev" type="button" aria-label="Previous">‹</button><span class="lbl" id="navlbl">—</span><button id="next" type="button" aria-label="Next">›</button><button id="today" type="button" style="width:auto;padding:0 10px;font-size:12px">Now</button></div>
       <div class="filters" id="filters">
         <button class="fchip" data-f="all" aria-pressed="true" type="button">All</button>
@@ -162,8 +194,10 @@ a{color:var(--home)}
   <div class="note" id="note"></div>
   <div id="err"></div>
   <section class="games" id="games"></section>
+  <section class="hist" id="hist" hidden></section>
 </main>
 
+<script src="history.js"></script>
 <script src="picks.js"></script>
 <script>
 (function(){
@@ -182,7 +216,7 @@ const STATES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California
 const WMO={0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Fog',51:'Drizzle',53:'Drizzle',55:'Drizzle',56:'Freezing drizzle',57:'Freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow',80:'Showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Snow showers',95:'Thunderstorms',96:'Thunderstorms',99:'Thunderstorms'};
 
 const store={get(k){try{return localStorage.getItem('mgc_'+k)}catch(e){return null}},set(k,v){try{localStorage.setItem('mgc_'+k,v)}catch(e){}}};
-const S={league:LEAGUES[store.get('league')]?store.get('league'):'nfl',filter:'all',date:null,week:null,seasontype:null,events:[],open:new Set(),sum:{},wx:{},geo:{},err:null,last:null,timer:null,tick:null,next:0,token:0,weekNum:null};
+const S={league:(LEAGUES[store.get('league')]||store.get('league')==='hist')?store.get('league'):'nfl',hLg:'all',hRows:null,hLive:0,hBusy:false,filter:'all',date:null,week:null,seasontype:null,events:[],open:new Set(),sum:{},wx:{},geo:{},err:null,last:null,timer:null,tick:null,next:0,token:0,weekNum:null};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
@@ -242,6 +276,7 @@ function resText(r,state){ if(!r) return ''; if(state==='post') return r==='win'
 
 /* ---------- data loads ---------- */
 async function loadBoard(){
+  if(!LEAGUES[S.league]) return;
   const tok=++S.token; const L=LEAGUES[S.league]; const q=new URLSearchParams(L.params||{});
   if(L.nav==='day'){ if(!S.date) S.date=ymd(new Date()); q.set('dates',S.date); }
   else if(S.week){ q.set('week',S.week); if(S.seasontype) q.set('seasontype',S.seasontype); }
@@ -313,8 +348,11 @@ function repaint(id){ const g=S.events.find(x=>x.id===id); const el=document.que
 function visible(g){ const p=findPick(g);
   switch(S.filter){case 'live':return g.state==='in';case 'best':return !!(p&&p.best);case 'dis':return !!(p&&p.agrees===false);case 'picked':return !!p;default:return true;} }
 function render(){
+  $('tabs').innerHTML=Object.entries(LEAGUES).map(([k,v])=>`<button class="tab" role="tab" type="button" data-l="${k}" aria-selected="${k===S.league}">${v.label}</button>`).join('')+`<button class="tab hist-tab" role="tab" type="button" data-l="hist" aria-selected="${S.league==='hist'}">History</button>`;
+  const isH=S.league==='hist';
+  ['row2','summary','note','err','games'].forEach(id=>{$(id).hidden=isH}); $('hist').hidden=!isH;
+  if(isH){ renderHistory(); return; }
   const L=LEAGUES[S.league];
-  $('tabs').innerHTML=Object.entries(LEAGUES).map(([k,v])=>`<button class="tab" role="tab" type="button" data-l="${k}" aria-selected="${k===S.league}">${v.label}</button>`).join('');
   $('navlbl').textContent=L.nav==='day'?parseYmd(S.date||ymd(new Date())).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}):(S.weekNum!=null?'Week '+S.weekNum:'This week');
   document.querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===S.filter)));
   $('err').innerHTML=S.err?`<div class="err">${esc(S.err)}</div>`:'';
@@ -409,8 +447,9 @@ function detail(g,p){
 
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-l],[data-f],[data-more]'); if(!t) return;
-  if(t.dataset.l){ if(t.dataset.l===S.league) return; S.league=t.dataset.l; store.set('league',S.league); S.events=[]; S.date=null; S.week=null; S.seasontype=null; S.weekNum=null; S.open.clear(); render(); loadBoard(); }
+  const t=e.target.closest('[data-l],[data-f],[data-more],[data-hl]'); if(!t) return;
+  if(t.dataset.hl){ S.hLg=t.dataset.hl; renderHistory(); return; }
+  if(t.dataset.l){ if(t.dataset.l===S.league) return; S.league=t.dataset.l; store.set('league',S.league); S.token++; clearTimeout(S.timer); S.events=[]; S.date=null; S.week=null; S.seasontype=null; S.weekNum=null; S.open.clear(); render(); if(S.league==='hist') loadHistory(); else loadBoard(); }
   else if(t.dataset.f){ S.filter=t.dataset.f; render(); }
   else if(t.dataset.more){ const id=t.dataset.more; if(S.open.has(id)) S.open.delete(id); else S.open.add(id);
     const g=S.events.find(x=>x.id===id); repaint(id);
@@ -424,12 +463,80 @@ function step(dir){
 }
 $('prev').onclick=()=>step(-1); $('next').onclick=()=>step(1);
 $('today').onclick=()=>{S.date=null;S.week=null;S.seasontype=null;S.events=[];S.open.clear();render();loadBoard();};
-$('refresh').onclick=()=>{S.sum={};loadBoard();};
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&S.last&&Date.now()-S.last>30000) loadBoard(); });
-setInterval(()=>{ if(!S.last) return; const s=Math.max(0,Math.round((S.next-Date.now())/1000));
+$('refresh').onclick=()=>{ if(S.league==='hist'){S.hRows=null;loadHistory();return;} S.sum={};loadBoard();};
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&S.league!=='hist'&&S.last&&Date.now()-S.last>30000) loadBoard(); });
+setInterval(()=>{ if(S.league==='hist'){ $('upd').textContent=S.hBusy?'Grading recent picks…':'Pick history'; return; } if(!S.last) return; const s=Math.max(0,Math.round((S.next-Date.now())/1000));
   $('upd').textContent=`Updated ${S.last.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'})} · next in ${s}s`; },1000);
 
-render(); loadBoard();
+/* ---------- pick history ---------- */
+const HLG={nfl:'NFL',cfb:'CFB',nba:'NBA',mlb:'MLB'};
+const hkey=(lg,d,a,h)=>lg+'|'+d+'|'+nrm(a)+'|'+nrm(h);
+function baseHistory(){
+  const H=window.PICK_HISTORY||{}; const out=[];
+  for(const lg of Object.keys(H)) for(const r of H[lg]) out.push({lg,date:r[0],away:r[1],home:r[2],pick:r[3],win:+r[4],best:!!r[5],res:r[6]?'W':'L',ats:r[7]===1?'W':r[7]===0?'L':r[7]==='P'?'P':null,src:'sheet'});
+  return out;
+}
+async function loadHistory(){
+  const rows=baseHistory(); const have=new Set(rows.map(r=>hkey(r.lg,r.date,r.away,r.home)));
+  S.hRows=rows; S.hLive=0; renderHistory();
+  const MP=window.MODEL_PICKS||{}; const today=ymd(new Date()); const tasks=[];
+  for(const lg of ['nfl','cfb','nba','mlb']){
+    const P=MP[lg]; if(!P||!P.games||!P.games.length) continue;
+    const dates=[...new Set(P.games.map(g=>g.date).filter(Boolean))].map(d=>d.replace(/-/g,'')).filter(d=>d<=today);
+    for(const d of dates) tasks.push({lg,d});
+  }
+  if(!tasks.length) return;
+  S.hBusy=true; const tok=S.token;
+  await Promise.all(tasks.map(async({lg,d})=>{
+    const L=LEAGUES[lg]; const q=new URLSearchParams(L.params||{}); q.set('dates',d);
+    try{
+      const data=await getJSON(API+L.path+'/scoreboard?'+q,15000);
+      for(const ev of (data.events||[]).map(norm)){
+        if(ev.state!=='post') continue;
+        const p=MP[lg].games.find(p=>p.id?p.id===ev.id:(teamIs(p.away,ev.away)&&teamIs(p.home,ev.home)));
+        if(!p) continue;
+        const k=hkey(lg,p.date,p.away,p.home); if(have.has(k)) continue;
+        const r=grade(ev,p); if(!r.su||r.su==='push') continue;
+        have.add(k); S.hRows.push({lg,date:p.date,away:p.away,home:p.home,pick:p.pick,win:+p.win,best:!!p.best,res:r.su==='win'?'W':'L',ats:r.ats==='win'?'W':r.ats==='loss'?'L':r.ats==='push'?'P':null,src:'live'}); S.hLive++;
+      }
+    }catch(e){}
+  }));
+  S.hBusy=false; if(tok===S.token&&S.league==='hist') renderHistory();
+}
+const BUCKETS=[[50,55,'50–54%'],[55,60,'55–59%'],[60,65,'60–64%'],[65,70,'65–69%'],[70,75,'70–74%'],[75,80,'75–79%'],[80,90,'80–89%'],[90,101,'90%+']];
+function rec(rows){ const w=rows.filter(r=>r.res==='W').length, l=rows.length-w; return {w,l,n:rows.length,pct:rows.length?w/rows.length:null,exp:rows.length?rows.reduce((s,r)=>s+r.win,0)/rows.length/100:null}; }
+const pctTxt=p=>p==null?'—':(p*100).toFixed(1)+'%';
+function recCell(r){ return `${r.w}–${r.l}`; }
+function renderHistory(){
+  const el=$('hist');
+  if(!S.hRows) S.hRows=baseHistory();
+  const all=S.hRows; const lgs=['all',...Object.keys(HLG).filter(k=>all.some(r=>r.lg===k))];
+  const rows=S.hLg==='all'?all:all.filter(r=>r.lg===S.hLg);
+  const tot=rec(rows), best=rec(rows.filter(r=>r.best)), rest=rec(rows.filter(r=>!r.best));
+  const atsRows=rows.filter(r=>r.ats==='W'||r.ats==='L'), atsP=rows.filter(r=>r.ats==='P').length;
+  const ats={w:atsRows.filter(r=>r.ats==='W').length,l:atsRows.filter(r=>r.ats==='L').length}; ats.pct=atsRows.length?ats.w/atsRows.length:null;
+  const sorted=[...rows].sort((a,b)=>b.date.localeCompare(a.date));
+  const last10=rec(sorted.slice(0,10));
+  const tile=(k,v,s)=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`;
+  const tiles=tile('Overall',recCell(tot),pctTxt(tot.pct)+' · '+tot.n+' picks')+tile('★ Best picks',recCell(best),pctTxt(best.pct)+' · '+best.n+' picks')+tile('Other picks',recCell(rest),pctTxt(rest.pct))+(atsRows.length?tile('Against spread',`${ats.w}–${ats.l}${atsP?'–'+atsP:''}`,pctTxt(ats.pct)+' · NFL & CFB'):'')+tile('Last 10',recCell(last10),pctTxt(last10.pct));
+  const bRow=(label,rs)=>{ const r=rec(rs); if(!r.n) return `<tr><td>${label}</td><td>—</td><td>—</td><td>—</td><td class="barcell"></td></tr>`;
+    const hit=r.pct*100, ex=r.exp*100, cls=hit>=ex?'good':'bad';
+    return `<tr><td>${label}</td><td>${recCell(r)}</td><td class="pct ${cls}">${hit.toFixed(0)}%</td><td class="pct">${ex.toFixed(0)}%</td><td class="barcell"><div class="hbar" title="Hit ${hit.toFixed(1)}% vs expected ${ex.toFixed(1)}%"><i class="${cls}" style="width:${hit}%"></i><b style="left:calc(${Math.min(ex,99.5)}% - 1px)"></b></div></td></tr>`; };
+  const bucketTable=(rs)=>`<div class="tbl"><table class="btable"><thead><tr><th>Model win %</th><th>Record</th><th>Hit</th><th>Expected</th><th></th></tr></thead><tbody>${BUCKETS.map(([lo,hi,lab])=>bRow(lab,rs.filter(r=>r.win>=lo&&r.win<hi))).join('')}</tbody></table></div><div class="legend"><span>Actual hit rate (green = beating the model's own %, red = below)</span><span class="exp">Expected, from the model's average win %</span></div>`;
+  const sportTable=`<div class="tbl"><table class="btable"><thead><tr><th>Sport</th><th>All picks</th><th>Hit</th><th>★ Best</th><th>Hit</th></tr></thead><tbody>${Object.keys(HLG).filter(k=>all.some(r=>r.lg===k)).map(k=>{const a=rec(all.filter(r=>r.lg===k)),b=rec(all.filter(r=>r.lg===k&&r.best));return `<tr><td>${HLG[k]}</td><td>${recCell(a)}</td><td class="pct">${pctTxt(a.pct)}</td><td>${b.n?recCell(b):'—'}</td><td class="pct">${pctTxt(b.pct)}</td></tr>`}).join('')}</tbody></table></div>`;
+  const recent=sorted.slice(0,40).map(r=>{const d=new Date(r.date+'T12:00:00'); return `<div class="rrow"><span class="d">${d.toLocaleDateString([], {month:'numeric',day:'numeric'})}</span><span class="m"><span class="lg">${HLG[r.lg]}</span>${esc(r.away)} @ ${esc(r.home)} · <b>${esc(r.pick)}</b>${r.best?' <span class="star">★</span>':''}</span><span class="w">${Math.round(r.win)}%</span><span class="res ${r.res}">${r.res}</span></div>`}).join('');
+  const span=sorted.length?`${new Date(sorted[sorted.length-1].date+'T12:00:00').toLocaleDateString([], {month:'short',day:'numeric'})} – ${new Date(sorted[0].date+'T12:00:00').toLocaleDateString([], {month:'short',day:'numeric'})}`:'';
+  el.innerHTML=`<div class="hchips" style="padding-top:14px">${lgs.map(k=>`<button class="fchip" type="button" data-hl="${k}" aria-pressed="${k===S.hLg}">${k==='all'?'All sports':HLG[k]}</button>`).join('')}</div>
+  <div class="summary" style="padding:0">${tiles}</div>
+  <div class="hgrid">
+    <div class="panel"><h3>Record by model win %</h3><p class="sub">Does a 70% pick actually win about 70% of the time? Small groups swing a lot, so read the record next to the percent.</p>${bucketTable(rows)}</div>
+    <div class="panel"><h3>★ Best picks by win %</h3><p class="sub">Same view, limited to the games flagged ★ Best Pick.</p>${bucketTable(rows.filter(r=>r.best))}</div>
+  </div>
+  ${S.hLg==='all'?`<div class="panel"><h3>By sport</h3>${sportTable}</div>`:''}
+  <div class="panel"><h3>Recent picks</h3><p class="sub">${span}. Graded from your Results sheets in Drive${S.hLive?`, plus ${S.hLive} finished game${S.hLive===1?'':'s'} graded live from ESPN`:''}${S.hBusy?' (checking ESPN for newer finals…)':''}. NFL Week 6 is left out because its results were rebuilt, not graded from saved picks.</p><div class="rlist">${recent||'<p class="muted">No graded picks yet.</p>'}</div></div>`;
+}
+
+render(); if(S.league==='hist') loadHistory(); else loadBoard();
 })();
 </script>
 </body>
