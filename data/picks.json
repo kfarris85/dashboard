@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-05T14:18:53-06:00",
+ "updated": "2026-11-05T17:11:08-06:00",
  "leagues": {
   "nfl": {
    "sheet": "2026 Week 9 Picks (Nov 04)",
@@ -650,8 +650,8 @@
    ]
   },
   "nba": {
-   "sheet": "2026-27 NBA Picks (Nov 4)",
-   "url": "https://docs.google.com/spreadsheets/d/1MH6JSD0eBJys9K3ifMqkrzk2zf5r7B1P6ERqeAjS1s8/edit?usp=drivesdk&ouid=100088946090688909872",
+   "sheet": "2026-27 NBA Picks (Nov 5)",
+   "url": "https://docs.google.com/spreadsheets/d/10knuvobtJrTtwj72AN93CVqcwsFOfAHCDg6RqMH2idc/edit?usp=drivesdk&ouid=100088946090688909872",
    "games": [
     {
      "id": "401909922",
@@ -988,6 +988,54 @@
      "total": 233.5,
      "lean": "Under",
      "why": "MIA lineup +1.9 pts; LAC team form +0.3; home court +2.1; Brandon Ingram (LAC) out; Jordan Miller (LAC) out; Vegas favors MIA — lower confidence"
+    },
+    {
+     "id": "401909936",
+     "date": "2026-11-05",
+     "away": "ORL",
+     "home": "PHX",
+     "pick": "ORL",
+     "win": 51,
+     "conf": "Toss-up",
+     "best": false,
+     "vegas": 47,
+     "kalshi": null,
+     "line": "PHX -1.5",
+     "spreadPick": "ORL +1.5",
+     "cover": 56,
+     "agrees": false,
+     "proj": [
+      111,
+      111
+     ],
+     "fTotal": 227.1,
+     "total": 222.5,
+     "lean": "Over",
+     "why": "home court +2.1; PHX on back-to-back; Paolo Banchero (ORL) out; Jalen Suggs (ORL) out; Mark Williams (PHX) out; Vegas favors PHX — lower confidence"
+    },
+    {
+     "id": "401909937",
+     "date": "2026-11-05",
+     "away": "MIA",
+     "home": "GS",
+     "pick": "GS",
+     "win": 68,
+     "conf": "Lean",
+     "best": false,
+     "vegas": 62,
+     "kalshi": null,
+     "line": "GS -4.5",
+     "spreadPick": "GS -4.5",
+     "cover": 54,
+     "agrees": true,
+     "proj": [
+      115,
+      121
+     ],
+     "fTotal": 235.4,
+     "total": 235.5,
+     "lean": "Under",
+     "why": "MIA lineup +1.3 pts; GS team form +2.7; home court +2.1; MIA on back-to-back; Jimmy Butler III (GS) out; Moses Moody (GS) out; Kristaps Porzingis (GS) out"
     }
    ]
   },
