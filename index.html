@@ -168,7 +168,7 @@ a{color:var(--home)}
 <script>
 (function(){
 'use strict';
-const PROXY=location.protocol.indexOf('http')===0;
+const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
 const API=PROXY?'/api/espn/':'https://site.api.espn.com/apis/site/v2/sports/';
 const GEO=PROXY?'/api/geo?':'https://geocoding-api.open-meteo.com/v1/search?';
 const WX=PROXY?'/api/wx?':'https://api.open-meteo.com/v1/forecast?';
