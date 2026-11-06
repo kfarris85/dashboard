@@ -390,6 +390,7 @@ function parseSum(d){
   }
   if(Array.isArray(d.plays)&&d.plays.length) o.last=d.plays[d.plays.length-1].text;
   if(d.gameInfo&&d.gameInfo.weather) o.espnWx=d.gameInfo.weather;
+  o.series=(d.seasonseries||[]).filter(x=>x.type!=='current').map(x=>({type:x.type,ev:(x.events||[]).map(e=>h2hEv(e,e.competitors,(e.statusType&&e.statusType.state)||e.status))}));
   return o;
 }
 async function geo(city,st){
@@ -422,7 +423,7 @@ async function enrich(tok){
   let i=0; const run=async()=>{while(i<jobs.length&&tok===S.token){const j=jobs[i++]; try{await j()}catch(e){}}};
   await Promise.all([run(),run(),run(),run()]);
 }
-function repaint(id){ const g=S.events.find(x=>x.id===id); const el=document.querySelector('[data-id="'+id+'"]'); if(g&&el&&visible(g)) el.outerHTML=card(g); if(S.open.has(id)) loadWavs(id); }
+function repaint(id){ const g=S.events.find(x=>x.id===id); const el=document.querySelector('[data-id="'+id+'"]'); if(g&&el&&visible(g)) el.outerHTML=card(g); if(S.open.has(id)){ loadWavs(id); loadH2H(id); } }
 
 /* ---------- render ---------- */
 function matchGame(g,q){
@@ -528,6 +529,7 @@ function detail(g,p){
     out.push(`<div><h4>Top 3 players · season leaders</h4><div class="injcols">${s.leaders.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.cats.map(c=>`<li>${plink(c.who)}<br><span class="sl">${esc(c.cat)}: <b>${esc(c.val)}</b></span>${wavHTML(c.id,c.role)}</li>`).join('')}</ul></div>`).join('')}</div><p class="muted" style="margin-top:6px;font-size:12.5px">Game stats replace these at kickoff. “Opp-weighted” lines are this season’s per-game averages, weighted by opponent defense.</p></div>`);
   }
   out.push(rankHTML(g));
+  out.push(h2hHTML(g));
   if(s.inj&&s.inj.some(t=>t.list.length)){
     const cls=st=>/out|reserve/i.test(st)?'st-out':/doubt|quest|day/i.test(st)?'st-q':'';
     out.push(`<div><h4>Injury report</h4><div class="injcols">${s.inj.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.list.slice(0,12).map(i=>`<li>${esc(i.name)} <span>${esc(i.pos)}</span> · <span class="${cls(i.status)}">${esc(i.status)}</span>${i.what?` <span>(${esc(i.what)})</span>`:''}</li>`).join('')||'<li><span>None listed</span></li>'}${t.list.length>12?`<li><span>+${t.list.length-12} more</span></li>`:''}</ul></div>`).join('')}</div></div>`);
@@ -698,6 +700,63 @@ function wavHTML(id,role){
   const spec=wavCols(S.league,role);
   const parts=spec.cols.map(([lab,cands])=>{const i=colIndex(c.labels,c.names,lab,cands,spec.anchor); return i>=0&&c.w[i]!=='—'?`${lab} <b>${esc(c.w[i])}</b>`:''}).filter(Boolean);
   return parts.length?`<br><span class="sl">Opp-weighted (${c.n} G): ${parts.join(' · ')}</span>`:'';
+}
+/* ---------- head-to-head (this season only) ---------- */
+S.h2h={};
+function h2hEv(e,cs,state){return {id:String(e.id),date:e.date,post:state==='post',neutral:!!e.neutralSite,
+  c:(cs||[]).map(x=>({ha:x.homeAway,id:x.team&&String(x.team.id),abbr:x.team&&x.team.abbreviation,score:x.score&&typeof x.score==='object'?x.score.displayValue:x.score,win:!!x.winner}))};}
+async function loadH2H(gid){
+  const g=S.events.find(x=>x.id===gid); const lg=S.league; const L=LEAGUES[lg]; if(!g||!L) return;
+  const k=lg+'|'+gid; if(S.h2h[k]) return;
+  const A=String(g.away.id),H=String(g.home.id); let meets=[],label='Earlier this season';
+  if(lg==='nba'||lg==='mlb'){
+    const s=S.sum[gid]; if(!s) return;
+    const ser=s.series||[]; const pick=ser.find(x=>x.type==='playoff'&&x.ev.some(e=>e.id===gid))||ser.find(x=>x.type==='season')||ser[0];
+    meets=pick?pick.ev:[]; label=pick&&pick.type==='playoff'?'Playoff series':'Season series';
+  }
+  S.h2h[k]='loading';
+  try{
+    if(!(lg==='nba'||lg==='mlb')){
+      const d=await getJSON(API+L.path+'/teams/'+H+'/schedule',12000);
+      meets=(d.events||[]).map(e=>{const c=(e.competitions||[])[0]||{}; return h2hEv({id:e.id,date:e.date,neutralSite:c.neutralSite},c.competitors,c.status&&c.status.type&&c.status.type.state);});
+    }
+    meets=meets.filter(m=>m.post&&m.id!==gid&&new Date(m.date)<g.date&&m.c.some(x=>x.id===A)&&m.c.some(x=>x.id===H)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const res={label,meets,last:null};
+    if(meets.length){ try{ res.last=h2hLast(lg,await getJSON(API+L.path+'/summary?event='+meets[meets.length-1].id,12000)); }catch(e){} }
+    S.h2h[k]=res;
+  }catch(e){ S.h2h[k]='err'; }
+  if(S.league===lg) repaint(gid);
+}
+function h2hLast(lg,d){
+  const o={}; const pc=(d.pickcenter||[])[0]; if(pc&&pc.details) o.line=pc.details;
+  const bp=(d.boxscore&&d.boxscore.players)||[]; const nm=a=>(a&&a.athlete&&(a.athlete.displayName||a.athlete.shortName))||'';
+  if(lg==='mlb') o.sp=bp.map(t=>{const c=(t.statistics||[]).find(x=>x.type==='pitching'||(x.labels||[]).includes('IP')); if(!c) return null;
+    const a=(c.athletes||[]).find(x=>x.starter)||(c.athletes||[])[0]; if(!a) return null; const L=c.labels||[]; const v=l=>{const i=L.indexOf(l); return i>=0?a.stats[i]:''};
+    return {abbr:t.team&&t.team.abbreviation,name:nm(a),line:`${v('IP')} IP, ${v('ER')} ER, ${v('K')} K`};}).filter(Boolean);
+  if(lg==='nba') o.dnp=bp.map(t=>({abbr:t.team&&t.team.abbreviation,list:(((t.statistics||[])[0]||{}).athletes||[]).filter(a=>a.didNotPlay&&!/coach/i.test(a.reason||'')).map(a=>nm(a))})).filter(t=>t.list.length);
+  return o;
+}
+function h2hATS(line,m){
+  const x=/^([A-Z0-9&]+)\s+([-+]?\d+(?:\.\d+)?)$/i.exec(String(line||'').trim()); if(!x) return '';
+  const f=m.c.find(c=>String(c.abbr).toUpperCase()===x[1].toUpperCase()), o=m.c.find(c=>c!==f); if(!f||!o) return '';
+  const r=(+f.score)-(+o.score)+parseFloat(x[2]); return r>0?`${f.abbr} covered`:r<0?`${o.abbr} covered`:'Push';
+}
+function h2hHTML(g){
+  const lg=S.league; const r=S.h2h[lg+'|'+g.id]; if(!r||typeof r!=='object'||!r.meets.length) return '';
+  const A=String(g.away.id),H=String(g.home.id); const w={[A]:0,[H]:0}, pts={[A]:0,[H]:0};
+  r.meets.forEach(m=>m.c.forEach(c=>{ if(c.win&&w[c.id]!=null) w[c.id]++; if(pts[c.id]!=null) pts[c.id]+=(+c.score||0); }));
+  const ab={[A]:g.away.abbr,[H]:g.home.abbr}; const n=r.meets.length;
+  const lead=w[A]===w[H]?`Tied ${w[A]}–${w[H]}`:(w[A]>w[H]?`${esc(ab[A])} leads ${w[A]}–${w[H]}`:`${esc(ab[H])} leads ${w[H]}–${w[A]}`);
+  const unit=lg==='mlb'?'runs':'pts';
+  const avg=n>1?`<li>Avg score: ${esc(ab[A])} ${(pts[A]/n).toFixed(1)} – ${esc(ab[H])} ${(pts[H]/n).toFixed(1)} ${unit}</li>`:'';
+  const dt=d=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const row=m=>{const a=m.c.find(c=>c.ha==='away')||m.c[0], h=m.c.find(c=>c.ha==='home')||m.c[1]; const t=c=>c.win?`<b>${esc(c.abbr)} ${esc(c.score)}</b>`:`${esc(c.abbr)} ${esc(c.score)}`;
+    return `<li><span class="muted">${dt(m.date)}</span> ${t(a)} ${m.neutral?'vs':'@'} ${t(h)}${m.neutral?' <span class="muted">(neutral)</span>':''}</li>`;};
+  const shown=r.meets.slice(-5).reverse(); const lm=r.meets[n-1]; const L=r.last||{}; const extra=[];
+  if(L.line&&L.line!=='EVEN'&&lg!=='mlb'){ const ats=h2hATS(L.line,lm); extra.push(`<li>Last meeting line: ${esc(L.line)}${ats?` · <b>${esc(ats)}</b>`:''}</li>`); }
+  if(L.sp&&L.sp.length) extra.push(`<li>Last meeting starters: ${L.sp.map(p=>`${esc(p.abbr)} ${esc(p.name)} <span class="muted">(${esc(p.line)})</span>`).join(' · ')}</li>`);
+  if(L.dnp&&L.dnp.length) extra.push(`<li>Sat out last meeting: ${L.dnp.map(t=>`${esc(t.abbr)} ${t.list.map(esc).join(', ')}`).join(' · ')}</li>`);
+  return `<div><h4>${esc(r.label)} · ${lead}</h4><ul class="rk-m">${shown.map(row).join('')}${n>5?`<li class="muted">+${n-5} earlier meeting${n-5>1?'s':''}</li>`:''}${avg}${extra.join('')}</ul></div>`;
 }
 async function loadWavs(gid){
   const s=S.sum[gid]; if(!s) return; const lg=S.league; if(!LEAGUES[lg]) return;
