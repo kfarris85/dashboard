@@ -167,6 +167,12 @@ a{color:var(--home)}
 .prop .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .prop select,.prop input{font:600 15px var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
 .prop input{width:90px}
+.detail{grid-template-columns:minmax(0,1fr)}
+.detail>*{min-width:0}
+.rk-tbl td,.rk-tbl th{font-size:13.5px;padding:6px 4px}
+.rk-pill{display:inline-block;font:700 11px var(--f-mono);padding:2px 5px;border-radius:4px;background:var(--panel);border:1px solid var(--line);color:var(--muted);margin-left:2px}
+.rk-pill.good{color:var(--good);border-color:var(--good);background:var(--good-soft)} .rk-pill.bad{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
+.rk-m{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:3px;font-size:13.5px}
 .pchart{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 12px 10px;display:grid;gap:10px;min-width:0}
 .pc-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .pc-big{font:700 30px/1 var(--f-display)} .pc-stat{font:600 16px var(--f-body);color:var(--muted)}
@@ -521,6 +527,7 @@ function detail(g,p){
   } else if(s.leaders&&s.leaders.some(t=>t.cats.length)){
     out.push(`<div><h4>Top 3 players · season leaders</h4><div class="injcols">${s.leaders.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.cats.map(c=>`<li>${plink(c.who)}<br><span class="sl">${esc(c.cat)}: <b>${esc(c.val)}</b></span>${wavHTML(c.id,c.role)}</li>`).join('')}</ul></div>`).join('')}</div><p class="muted" style="margin-top:6px;font-size:12.5px">Game stats replace these at kickoff. “Opp-weighted” lines are this season’s per-game averages, weighted by opponent defense.</p></div>`);
   }
+  out.push(rankHTML(g));
   if(s.inj&&s.inj.some(t=>t.list.length)){
     const cls=st=>/out|reserve/i.test(st)?'st-out':/doubt|quest|day/i.test(st)?'st-q':'';
     out.push(`<div><h4>Injury report</h4><div class="injcols">${s.inj.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.list.slice(0,12).map(i=>`<li>${esc(i.name)} <span>${esc(i.pos)}</span> · <span class="${cls(i.status)}">${esc(i.status)}</span>${i.what?` <span>(${esc(i.what)})</span>`:''}</li>`).join('')||'<li><span>None listed</span></li>'}${t.list.length>12?`<li><span>+${t.list.length-12} more</span></li>`:''}</ul></div>`).join('')}</div></div>`);
@@ -590,7 +597,7 @@ async function searchPlayers(q,autoName){
 const val=(o,...ks)=>{for(const k of ks){ if(o==null) return undefined; o=o[k]; } return o;};
 /* opponent defense: points (runs) allowed per game from ESPN standings */
 async function defense(lg){
-  S.def=S.def||{}; const c=S.def[lg]; if(c&&Date.now()-c.t<36e5) return c;
+  S.def=S.def||{}; const c=S.def[lg]; if(c&&c.v===2&&Date.now()-c.t<36e5) return c;
   const d=await getJSON(ESPNV2+LEAGUES[lg].path+'/standings',15000);
   const teams={};
   (function walk(o){ if(!o||typeof o!=='object') return; if(Array.isArray(o)){o.forEach(walk);return;}
@@ -598,13 +605,17 @@ async function defense(lg){
       const s={}; o.stats.forEach(x=>{ if(x&&x.name&&x.value!=null) s[x.name]=+x.value; });
       const gp=s.gamesPlayed||((s.wins||0)+(s.losses||0)+(s.ties||0)+(s.otLosses||0));
       let pa=s.avgPointsAgainst; if(!(pa>0)&&s.pointsAgainst>0&&gp>0) pa=s.pointsAgainst/gp;
-      if(pa>0&&!teams[o.team.id]) teams[o.team.id]={pa,abbr:o.team.abbreviation||'',name:o.team.displayName||''};
+      let pf=s.avgPointsFor; if(!(pf>0)&&s.pointsFor>0&&gp>0) pf=s.pointsFor/gp;
+      if(pa>0&&!teams[o.team.id]) teams[o.team.id]={pa,pf:pf>0?pf:null,gp:gp||null,abbr:o.team.abbreviation||'',name:o.team.displayName||''};
       return; }
     for(const k in o) if(o[k]&&typeof o[k]==='object') walk(o[k]); })(d);
   const ids=Object.keys(teams); if(!ids.length) throw new Error('no standings data');
   const avg=ids.reduce((s,i)=>s+teams[i].pa,0)/ids.length;
   [...ids].sort((a,b)=>teams[a].pa-teams[b].pa).forEach((id,i)=>{teams[id].rank=i+1;});
-  return (S.def[lg]={t:Date.now(),teams,avg,n:ids.length});
+  const withPf=ids.filter(i=>teams[i].pf!=null);
+  [...withPf].sort((a,b)=>teams[b].pf-teams[a].pf).forEach((id,i)=>{teams[id].oRank=i+1;});
+  [...withPf].sort((a,b)=>(teams[b].pf-teams[b].pa)-(teams[a].pf-teams[a].pa)).forEach((id,i)=>{teams[id].nRank=i+1;});
+  return (S.def[lg]={v:2,t:Date.now(),teams,avg,n:ids.length,nO:withPf.length});
 }
 /* opponent-weighted season averages for the top players inside game details */
 S.wav={};
@@ -623,6 +634,21 @@ function colIndex(labels,names,label,cands,anchor){
   let start=0; for(const a of anchor){ const i=labels.indexOf(a); if(i>=0){ start=i; break; } }
   for(let i=start;i<labels.length;i++) if(labels[i]===label) return i;
   return labels.indexOf(label);
+}
+function rankHTML(g){
+  const lg=S.league; const d=S.def&&S.def[lg];
+  if(!d||d.v!==2){ if(!S.defLoading){ S.defLoading=true; defense(lg).then(()=>{ S.defLoading=false; S.open.forEach(id=>repaint(id)); }).catch(()=>{ S.defLoading=false; S.defFail=lg; }); }
+    return S.defFail===lg?'':'<div><h4>Team rankings</h4><p class="muted">Loading…</p></div>'; }
+  const A=d.teams[g.away.id], H=d.teams[g.home.id];
+  if(!A&&!H) return '';
+  const unit=lg==='mlb'?'R':'PTS';
+  const rk=(r,n)=>{ if(!r) return ''; const p=(r-1)/n; const cls=p<.2?'good':p>=.8?'bad':''; return `<span class="rk-pill ${cls}">#${r}</span>`; };
+  const row=(t,tm)=>t?`<tr><td><b>${esc(tm.abbr||tm.short)}</b>${t.gp?` <span class="muted">${t.gp} G</span>`:''}</td><td>${t.pf!=null?t.pf.toFixed(1):'—'} ${rk(t.oRank,d.nO)}</td><td>${t.pa.toFixed(1)} ${rk(t.rank,d.n)}</td><td>${t.pf!=null?((t.pf-t.pa>=0?'+':'')+(t.pf-t.pa).toFixed(1)):'—'} ${rk(t.nRank,d.nO)}</td></tr>`:`<tr><td><b>${esc(tm.abbr)}</b></td><td colspan="3" class="muted">Not in ESPN standings</td></tr>`;
+  const mline=(o,od,dn,dd)=>o&&dd&&o.oRank?`<li><b>${esc(od.abbr)}</b> offense <b>#${o.oRank}</b> vs <b>${esc(dn.abbr)}</b> defense <b>#${dd.rank}</b> <span class="muted">· ${edge(o.oRank,dd.rank,d.nO,d.n)}</span></li>`:'';
+  const edge=(or,dr,nO,nD)=>{ const x=or/nO-dr/nD; return Math.abs(x)<0.15?'even matchup':x<0?'edge to the offense':'edge to the defense'; };
+  return `<div><h4>Team rankings · scoring per game</h4><div class="tbl"><table class="btable rk-tbl"><thead><tr><th>Team</th><th>Off ${unit}/G</th><th>Def ${unit}/G</th><th>Net</th></tr></thead><tbody>${row(A,g.away)}${row(H,g.home)}</tbody></table></div>
+    <ul class="rk-m">${mline(A,g.away,g.home,H)}${mline(H,g.home,g.away,A)}</ul>
+    <p class="muted" style="margin:4px 0 0;font-size:12.5px">Ranks out of ${d.n} ${lg==='cfb'?'FBS teams':'teams'} this season from ESPN standings. #1 offense scores the most; #1 defense allows the fewest. Green = top 20%, red = bottom 20%.</p></div>`;
 }
 function wavHTML(id,role){
   if(!id) return ''; const c=S.wav[S.league+'|'+id];
