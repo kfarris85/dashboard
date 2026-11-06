@@ -650,8 +650,31 @@ function modelRankHTML(g){
     <ul class="rk-m">${ml(A,g.away,g.home,H)}${ml(H,g.home,g.away,A)}</ul>
     <p class="muted" style="margin:4px 0 0;font-size:12.5px">From your NFL Weekly Model: recency-weighted, schedule-adjusted EPA per play (offense higher = better, defense lower = better). Power = rating in points vs an average team${thru?`, games through ${thru}`:''}.</p></div>`;
 }
+function powerOnlyHTML(g){
+  const lg=S.league; const R=lg==='nba'?S.nbaRanks:lg==='cfb'?S.cfbRanks:null; if(!R||!R.teams) return '';
+  const get=t=>lg==='cfb'?R.teams[String(t.id)]:R.teams[t.abbr]; const A=get(g.away), H=get(g.home); if(!A&&!H) return '';
+  const n=R.n||Object.keys(R.teams).length;
+  const pill=r=>{ if(!r) return '—'; const p=(r-1)/n; return `<span class="rk-pill ${p<.2?'good':p>=.8?'bad':''}">#${r}</span>`; };
+  const sg=x=>x==null?'':(x>=0?'+':'')+x;
+  const mut=s=>`<span class="muted" style="font-size:11.5px">${s}</span>`;
+  let head, row, note;
+  if(lg==='nba'){
+    head='<th>Team</th><th>Power</th><th>Tonight</th><th>Form</th>';
+    row=(t,tm)=>t?`<tr><td><b>${esc(tm.abbr)}</b></td><td>${pill(t.rank)} ${mut(sg(t.power))}${t.rankChg?` ${mut(t.rankChg>0?'▲'+t.rankChg:'▼'+(-t.rankChg))}`:''}</td><td>${pill(t.nowRank)} ${mut(sg(t.powerNow))}</td><td>${mut(sg(t.form))}</td></tr>`:`<tr><td><b>${esc(tm.abbr)}</b></td><td colspan="3" class="muted">Not rated</td></tr>`;
+    const asof=R.asof?new Date(R.asof+'T12:00:00').toLocaleDateString([], {month:'short',day:'numeric'}):'';
+    note=`From your NBA Daily Model${asof?` (${asof} run)`:''}. Power = points better than an average team at full health; Tonight = with the current injury report; Form = recent results beyond what the lineup explains. ▲▼ = rank change over 7 days.`;
+  } else {
+    head='<th>Team</th><th>Power</th><th>Rating</th><th>Record</th>';
+    row=(t,tm)=>t?`<tr><td><b>${esc(tm.abbr)}</b></td><td>${pill(t.rank)}</td><td>${sg(t.rating)}</td><td>${esc(t.rec||'')}</td></tr>`:`<tr><td><b>${esc(tm.abbr)}</b></td><td colspan="3" class="muted">Not an FBS team in the model</td></tr>`;
+    const thru=R.through?new Date(R.through.slice(0,10)+'T12:00:00').toLocaleDateString([], {month:'short',day:'numeric'}):'';
+    note=`From your NCAA Football Weekly Model: one power rating per team (points vs an average FBS team on a neutral field), ranked among ${n} FBS teams${thru?`, games through ${thru}`:''}. The model doesn't split offense and defense; the scoring ranks below cover that.`;
+  }
+  let gap='';
+  if(A&&H){ const a=lg==='nba'?A.powerNow:A.rating, h=lg==='nba'?H.powerNow:H.rating; if(a!=null&&h!=null){ const d=h-a; gap=`<p style="margin:6px 0 0;font-size:13.5px"><b>${esc(d>=0?g.home.abbr:g.away.abbr)}</b> rates <b>${Math.abs(d).toFixed(1)} pts</b> better${lg==='nba'?' tonight':''}, before home field.</p>`; } }
+  return `<div><h4>Model rankings · your ${lg==='nba'?'NBA':'college football'} model</h4><div class="tbl"><table class="btable rk-tbl"><thead><tr>${head}</tr></thead><tbody>${row(A,g.away)}${row(H,g.home)}</tbody></table></div>${gap}<p class="muted" style="margin:4px 0 0;font-size:12.5px">${note}</p></div>`;
+}
 function rankHTML(g){
-  return modelRankHTML(g)+scoreRankHTML(g);
+  return modelRankHTML(g)+powerOnlyHTML(g)+scoreRankHTML(g);
 }
 function scoreRankHTML(g){
   const lg=S.league; const d=S.def&&S.def[lg];
@@ -871,8 +894,8 @@ function renderHistory(){
 /* ---------- published data files (kept current by the scheduled publish task) ---------- */
 async function loadData(){
   const get=u=>fetch(u+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
-  const [p,hj,nr]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json')]);
-  if(nr&&nr.teams) S.nflRanks=nr;
+  const [p,hj,nr,br,cr]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json'),get('data/nba_ranks.json'),get('data/cfb_ranks.json')]);
+  if(nr&&nr.teams) S.nflRanks=nr; if(br&&br.teams) S.nbaRanks=br; if(cr&&cr.teams) S.cfbRanks=cr;
   if(p&&p.leagues){ window.MODEL_PICKS=Object.assign({},window.MODEL_PICKS||{},p.leagues); }
   if(hj&&Array.isArray(hj.rows)&&hj.rows.length){ S.histJson=hj; S.hRows=null; }
   const u=(hj&&hj.updated)||(p&&p.updated); if(u){ try{ S.dataUpdated=new Date(u).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){} }
