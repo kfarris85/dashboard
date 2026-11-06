@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-06T16:35:39-06:00",
+ "updated": "2026-11-06T17:09:12-06:00",
  "source": "Season Tracker Log",
  "rows": [
   {
@@ -4417,6 +4417,52 @@
    "ou": "✗",
    "clv": 1.5,
    "beat": "✓"
+  },
+  {
+   "key": "NBA|401909936",
+   "lg": "NBA",
+   "season": "2026-27",
+   "date": "2026-11-05",
+   "away": "ORL",
+   "home": "PHX",
+   "pick": "ORL",
+   "win": 51,
+   "vegas": 47,
+   "best": false,
+   "final": "ORL 104–PHX 117",
+   "result": "✗",
+   "spreadPick": "ORL +1.5",
+   "ats": "",
+   "fTotal": 227.1,
+   "mTotal": 222.5,
+   "aTotal": 221,
+   "lean": "Over",
+   "ou": "",
+   "clv": 0,
+   "beat": "="
+  },
+  {
+   "key": "NBA|401909937",
+   "lg": "NBA",
+   "season": "2026-27",
+   "date": "2026-11-05",
+   "away": "MIA",
+   "home": "GS",
+   "pick": "GS",
+   "win": 68,
+   "vegas": 62,
+   "best": false,
+   "final": "MIA 100–GS 120",
+   "result": "✓",
+   "spreadPick": "GS -4.5",
+   "ats": "",
+   "fTotal": 235.4,
+   "mTotal": 235.5,
+   "aTotal": 220,
+   "lean": "Under",
+   "ou": "",
+   "clv": -1,
+   "beat": "✗"
   }
  ]
 }
