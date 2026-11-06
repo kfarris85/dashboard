@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-06T10:55:52-06:00",
+ "updated": "2026-11-06T16:35:39-06:00",
  "leagues": {
   "nfl": {
    "sheet": "2026 Week 9 Picks (Nov 04)",
@@ -650,8 +650,8 @@
    ]
   },
   "nba": {
-   "sheet": "2026-27 NBA Picks (Nov 5)",
-   "url": "https://docs.google.com/spreadsheets/d/10knuvobtJrTtwj72AN93CVqcwsFOfAHCDg6RqMH2idc/edit?usp=drivesdk&ouid=100088946090688909872",
+   "sheet": "2026-27 NBA Picks (Nov 6)",
+   "url": "https://docs.google.com/spreadsheets/d/1Ty4rvPwBsd3bOPDItMQLdbyelDHrnUEGhYWjOjbdRGc/edit?usp=drivesdk&ouid=100088946090688909872",
    "games": [
     {
      "id": "401909936",
@@ -698,6 +698,213 @@
      "total": 235.5,
      "lean": "Under",
      "why": "MIA lineup +1.3 pts; GS team form +2.7; home court +2.1; MIA on back-to-back; Jimmy Butler III (GS) out; Moses Moody (GS) out; Kristaps Porzingis (GS) out"
+    },
+    {
+     "id": "401909287",
+     "date": "2026-11-06",
+     "away": "WSH",
+     "home": "ATL",
+     "pick": "ATL",
+     "win": 75,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 74,
+     "line": "ATL -8.5",
+     "spreadPick": "WSH +8.5",
+     "cover": 51,
+     "agrees": true,
+     "proj": [
+      111,
+      119
+     ],
+     "fTotal": 230.1,
+     "total": 229.5,
+     "lean": "Over",
+     "why": "ATL lineup +5.1 pts; ATL team form +0.9; home court +2.1; Jamir Watkins (WSH) out; Anthony Davis (WSH) 50% to play; Jalen Johnson (ATL) 50% to play; Jalen Wilson (ATL) 50% to play"
+    },
+    {
+     "id": "401909288",
+     "date": "2026-11-06",
+     "away": "BOS",
+     "home": "CHA",
+     "pick": "BOS",
+     "win": 75,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 79,
+     "line": "BOS -10.5",
+     "spreadPick": "CHA +10.5",
+     "cover": 58,
+     "agrees": true,
+     "proj": [
+      108,
+      100
+     ],
+     "fTotal": 219.8,
+     "total": 208.5,
+     "lean": "Over",
+     "why": "BOS lineup +7.0 pts; BOS team form +3.1; home court +2.1; Devin Carter (BOS) out; Moussa Diabate (CHA) out; Kon Knueppel (CHA) out; Dennis Schroder (CHA) out; Grant Williams (CHA) out"
+    },
+    {
+     "id": "401909289",
+     "date": "2026-11-06",
+     "away": "PHI",
+     "home": "CLE",
+     "pick": "CLE",
+     "win": 56,
+     "conf": "Toss-up",
+     "best": false,
+     "vegas": 42,
+     "line": "PHI -2.5",
+     "spreadPick": "CLE +2.5",
+     "cover": 64,
+     "agrees": false,
+     "proj": [
+      115,
+      117
+     ],
+     "fTotal": 228.7,
+     "total": 231.5,
+     "lean": "Under",
+     "why": "CLE lineup +1.1 pts; PHI team form +1.3; home court +2.1; Jarrett Allen (CLE) 50% to play; Peyton Watson (CLE) 50% to play; Vegas favors PHI — lower confidence"
+    },
+    {
+     "id": "401909290",
+     "date": "2026-11-06",
+     "away": "UTAH",
+     "home": "DAL",
+     "pick": "DAL",
+     "win": 72,
+     "conf": "Strong",
+     "best": false,
+     "vegas": 70,
+     "line": "DAL -6.5",
+     "spreadPick": "DAL -6.5",
+     "cover": 52,
+     "agrees": true,
+     "proj": [
+      109,
+      116
+     ],
+     "fTotal": 232.8,
+     "total": 225.5,
+     "lean": "Over",
+     "why": "DAL lineup +2.3 pts; DAL team form +2.7; home court +2.1; Jaren Jackson Jr. (UTAH) out; Jusuf Nurkic (UTAH) out"
+    },
+    {
+     "id": "401909291",
+     "date": "2026-11-06",
+     "away": "OKC",
+     "home": "MEM",
+     "pick": "MEM",
+     "win": 52,
+     "conf": "Toss-up",
+     "best": false,
+     "vegas": 37,
+     "line": "OKC -4.5",
+     "spreadPick": "MEM +4.5",
+     "cover": 66,
+     "agrees": false,
+     "proj": [
+      112,
+      112
+     ],
+     "fTotal": 228.1,
+     "total": 223.5,
+     "lean": "Over",
+     "why": "OKC lineup +3.5 pts; MEM team form +1.9; home court +2.1; Chet Holmgren (OKC) out; Jalen Williams (OKC) out; Vegas favors OKC — lower confidence"
+    },
+    {
+     "id": "401909292",
+     "date": "2026-11-06",
+     "away": "TOR",
+     "home": "MIL",
+     "pick": "TOR",
+     "win": 62,
+     "conf": "Lean",
+     "best": false,
+     "vegas": 63,
+     "line": "TOR -4.5",
+     "spreadPick": "MIL +4.5",
+     "cover": 53,
+     "agrees": true,
+     "proj": [
+      116,
+      113
+     ],
+     "fTotal": 229,
+     "total": 229.5,
+     "lean": "Under",
+     "why": "TOR lineup +1.5 pts; TOR team form +4.1; home court +2.1; Kawhi Leonard (TOR) out; Malachi Smith (TOR) out; Scottie Barnes (TOR) 50% to play; Immanuel Quickley (TOR) 50% to play; Pete Nance (MIL) out; Cormac Ryan (MIL) out"
+    },
+    {
+     "id": "401909293",
+     "date": "2026-11-06",
+     "away": "MIN",
+     "home": "NO",
+     "pick": "MIN",
+     "win": 61,
+     "conf": "Lean",
+     "best": false,
+     "vegas": 61,
+     "line": "MIN -3.5",
+     "spreadPick": "NO +3.5",
+     "cover": 51,
+     "agrees": true,
+     "proj": [
+      117,
+      114
+     ],
+     "fTotal": 233.4,
+     "total": 230.5,
+     "lean": "Over",
+     "why": "MIN lineup +3.0 pts; MIN team form +2.4; home court +2.1; Donte DiVincenzo (MIN) out; Anthony Edwards (MIN) out; Terrence Shannon Jr. (MIN) out; Yves Missi (NO) out"
+    },
+    {
+     "id": "401909294",
+     "date": "2026-11-06",
+     "away": "POR",
+     "home": "LAL",
+     "pick": "LAL",
+     "win": 56,
+     "conf": "Toss-up",
+     "best": false,
+     "vegas": 60,
+     "line": "LAL -3.5",
+     "spreadPick": "POR +3.5",
+     "cover": 56,
+     "agrees": true,
+     "proj": [
+      115,
+      117
+     ],
+     "fTotal": 231.5,
+     "total": 231.5,
+     "lean": "—",
+     "why": "POR team form +0.9; home court +2.1; Ja Morant (POR) out; Sandro Mamukelashvili (LAL) 50% to play"
+    },
+    {
+     "id": "401909295",
+     "date": "2026-11-06",
+     "away": "SA",
+     "home": "SAC",
+     "pick": "SA",
+     "win": 85,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 91,
+     "line": "SA -17.5",
+     "spreadPick": "SAC +17.5",
+     "cover": 66,
+     "agrees": true,
+     "proj": [
+      122,
+      110
+     ],
+     "fTotal": 229.7,
+     "total": 231.5,
+     "lean": "Under",
+     "why": "SA lineup +10.5 pts; SA team form +4.0; home court +2.1; Tobias Harris (SA) out; Keegan Murray (SAC) out; Maxime Raynaud (SAC) out; De'Andre Hunter (SAC) 50% to play"
     }
    ]
   },
