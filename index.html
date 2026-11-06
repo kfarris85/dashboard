@@ -635,7 +635,25 @@ function colIndex(labels,names,label,cands,anchor){
   for(let i=start;i<labels.length;i++) if(labels[i]===label) return i;
   return labels.indexOf(label);
 }
+const NFLV={LAR:'LA',WSH:'WAS'};
+function modelRankHTML(g){
+  const R=S.nflRanks; if(S.league!=='nfl'||!R||!R.teams) return '';
+  const get=t=>R.teams[NFLV[t.abbr]||t.abbr]; const A=get(g.away), H=get(g.home); if(!A&&!H) return '';
+  const n=R.n||32;
+  const pill=r=>{ if(!r) return '—'; const p=(r-1)/n; return `<span class="rk-pill ${p<.2?'good':p>=.8?'bad':''}">#${r}</span>`; };
+  const ep=x=>x==null?'':`<span class="muted" style="font-size:11.5px"> ${(x>=0?'+':'')+x.toFixed(3)}</span>`;
+  const row=(t,tm)=>t?`<tr><td><b>${esc(tm.abbr)}</b></td><td>${pill(t.power)} <span class="muted" style="font-size:11.5px">${(t.rating>=0?'+':'')+t.rating}</span></td><td>${pill(t.off)}${ep(t.offEpa)}</td><td>${pill(t.def)}${ep(t.defEpa)}</td></tr>`:`<tr><td><b>${esc(tm.abbr)}</b></td><td colspan="3" class="muted">Not rated</td></tr>`;
+  const edge=(o,d)=>{ const x=(o-d)/n; return Math.abs(x)<0.15?'even matchup':x<0?'edge to the offense':'edge to the defense'; };
+  const ml=(o,on,dn,d)=>o&&d?`<li><b>${esc(on.abbr)}</b> offense <b>#${o.off}</b> vs <b>${esc(dn.abbr)}</b> defense <b>#${d.def}</b> <span class="muted">· ${edge(o.off,d.def)}</span></li>`:'';
+  const thru=R.through?new Date(R.through+'T12:00:00').toLocaleDateString([], {month:'short',day:'numeric'}):'';
+  return `<div><h4>Model rankings · your NFL model</h4><div class="tbl"><table class="btable rk-tbl"><thead><tr><th>Team</th><th>Power</th><th>Offense</th><th>Defense</th></tr></thead><tbody>${row(A,g.away)}${row(H,g.home)}</tbody></table></div>
+    <ul class="rk-m">${ml(A,g.away,g.home,H)}${ml(H,g.home,g.away,A)}</ul>
+    <p class="muted" style="margin:4px 0 0;font-size:12.5px">From your NFL Weekly Model: recency-weighted, schedule-adjusted EPA per play (offense higher = better, defense lower = better). Power = rating in points vs an average team${thru?`, games through ${thru}`:''}.</p></div>`;
+}
 function rankHTML(g){
+  return modelRankHTML(g)+scoreRankHTML(g);
+}
+function scoreRankHTML(g){
   const lg=S.league; const d=S.def&&S.def[lg];
   if(!d||d.v!==2){ if(!S.defLoading){ S.defLoading=true; defense(lg).then(()=>{ S.defLoading=false; S.open.forEach(id=>repaint(id)); }).catch(()=>{ S.defLoading=false; S.defFail=lg; }); }
     return S.defFail===lg?'':'<div><h4>Team rankings</h4><p class="muted">Loading…</p></div>'; }
@@ -853,7 +871,8 @@ function renderHistory(){
 /* ---------- published data files (kept current by the scheduled publish task) ---------- */
 async function loadData(){
   const get=u=>fetch(u+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
-  const [p,hj]=await Promise.all([get('data/picks.json'),get('data/history.json')]);
+  const [p,hj,nr]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json')]);
+  if(nr&&nr.teams) S.nflRanks=nr;
   if(p&&p.leagues){ window.MODEL_PICKS=Object.assign({},window.MODEL_PICKS||{},p.leagues); }
   if(hj&&Array.isArray(hj.rows)&&hj.rows.length){ S.histJson=hj; S.hRows=null; }
   const u=(hj&&hj.updated)||(p&&p.updated); if(u){ try{ S.dataUpdated=new Date(u).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){} }
