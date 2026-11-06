@@ -167,6 +167,23 @@ a{color:var(--home)}
 .prop .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .prop select,.prop input{font:600 15px var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
 .prop input{width:90px}
+.pchart{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 12px 10px;display:grid;gap:10px;min-width:0}
+.pc-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pc-big{font:700 30px/1 var(--f-display)} .pc-stat{font:600 16px var(--f-body);color:var(--muted)}
+.pc-over{font:600 13px var(--f-mono);color:var(--muted)}
+.pc-scroll{overflow-x:auto;min-width:0;-webkit-overflow-scrolling:touch}
+.pc-inner{min-width:max-content;padding:0 2px}
+.pc-plot{position:relative;height:140px;display:flex;align-items:flex-end;gap:10px;border-bottom:2px solid var(--line)}
+.pc-col{width:46px;height:100%;display:flex;align-items:flex-end}
+.pc-bar{width:100%;border-radius:9px 9px 0 0;background:var(--muted);opacity:.85}
+.pc-bar.over{background:var(--good);opacity:1} .pc-bar.under{background:var(--bad);opacity:1} .pc-bar.push{background:var(--warn);opacity:1}
+.pc-line{position:absolute;left:0;right:0;border-top:2px dashed var(--ink);opacity:.55;pointer-events:none}
+.pc-line span{position:absolute;right:0;top:-18px;font:700 12px var(--f-mono);background:var(--panel);padding:0 3px}
+.pc-labels{display:flex;gap:10px;padding-top:6px}
+.pc-lab{width:46px;display:grid;justify-items:center;font-size:11.5px;line-height:1.3;text-align:center}
+.pc-lab b{font:700 15px var(--f-mono)}
+.pc-gr{font:700 10.5px var(--f-body)}
+.pc-foot{text-align:center;font-size:13px;color:var(--muted)} .pc-foot b{color:var(--ink)}
 .prop .out{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
 .tab.hist-tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
 .hist{display:grid;gap:18px;padding-bottom:40px}
@@ -686,7 +703,7 @@ async function openPlayer(f){
     const numCols=gl2.labels.map((l,i)=>({l,i})).filter(c=>gl2.rows.filter(r=>/^-?\d+(\.\d+)?$/.test(String(r.stats[c.i]==null?'':r.stats[c.i]).replace(/,/g,''))).length>=Math.ceil(gl2.rows.length*0.6));
     if(numCols.length){
       const pref=['PTS','YDS','REC','H','K','REB','AST'].map(x=>numCols.find(c=>c.l===x)).find(Boolean)||numCols[0];
-      out.splice(2,0,`<div class="prop"><h4 style="margin:0">Prop check</h4><div class="row"><select id="propStat" aria-label="Stat">${numCols.map(c=>`<option value="${c.i}"${c===pref?' selected':''}>${esc(c.l)}</option>`).join('')}</select><span class="muted">over</span><input id="propLine" type="number" step="0.5" inputmode="decimal" placeholder="Line" aria-label="Prop line"><span class="muted">this season</span></div><div class="out" id="propOut"><p class="muted" style="margin:0">Type the prop line to see how often he's cleared it.</p></div></div>`);
+      out.splice(2,0,`<div class="prop"><h4 style="margin:0">Prop check</h4><div class="row"><select id="propStat" aria-label="Stat">${numCols.map(c=>`<option value="${c.i}"${c===pref?' selected':''}>${esc(c.l)}</option>`).join('')}</select><span class="muted">over</span><input id="propLine" type="number" step="0.5" inputmode="decimal" placeholder="Line" aria-label="Prop line"><span class="muted">this season</span></div><div id="propChart"></div><div class="out" id="propOut"></div></div>`);
     }
     shownLog=true;
   }
@@ -848,6 +865,7 @@ function propCalc(){
   if(!vals.length){ out.innerHTML='<p class="muted" style="margin:0">No games with this stat.</p>'; return; }
   const sw=vals.reduce((s,x)=>s+c.w(x.r),0); const wavg=vals.reduce((s,x)=>s+c.w(x.r)*x.v,0)/sw;
   const avg=vals.reduce((s,x)=>s+x.v,0)/vals.length;
+  propChart(c,i,vals,line,wavg);
   const box=(k,v,s,cls)=>`<div class="tile"><div class="k">${k}</div><div class="v ${cls||''}" style="font-size:22px">${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`;
   let html=box('Opp-weighted avg',wavg.toFixed(1),`straight ${avg.toFixed(1)}`);
   if(isNaN(line)){ out.innerHTML=html+'<p class="muted" style="margin:0;align-self:center">Enter a line to see hit rates.</p>'; return; }
@@ -860,6 +878,27 @@ function propCalc(){
   html+=box('Over '+line,pctTxt(all.pct),fmt(all),cls(all))+box('Last 5',pctTxt(last5.pct),fmt(last5),cls(last5))+box('vs tough D (A–B)',pctTxt(tough.pct),fmt(tough),cls(tough))+box('vs soft D (D–F)',pctTxt(soft.pct),fmt(soft),cls(soft));
   html+=`<div class="tile"><div class="k">Edge vs line</div><div class="v ${wavg>line?'good':'bad'}" style="font-size:22px">${(wavg-line>=0?'+':'')+(wavg-line).toFixed(1)}</div><div class="s">weighted avg − line</div></div>`;
   out.innerHTML=html;
+}
+function propChart(c,i,vals,line,wavg){
+  const el=$('propChart'); if(!el) return;
+  const games=[...vals].reverse(); /* oldest → newest, left to right */
+  const hasLine=!isNaN(line);
+  const max=Math.max(...games.map(x=>x.v),hasLine?line:0,1)*1.12;
+  const lab=$('propStat').selectedOptions[0]?$('propStat').selectedOptions[0].textContent:'';
+  const over=hasLine?vals.filter(x=>x.v>line).length:null;
+  const last5=vals.slice(0,5); const l5avg=last5.reduce((s,x)=>s+x.v,0)/last5.length;
+  const fmtV=v=>Number.isInteger(v)?v:v.toFixed(1);
+  const bars=games.map(x=>{const cls=!hasLine?'':x.v>line?'over':x.v<line?'under':'push'; const hpct=Math.max(2,x.v/max*100);
+    return `<div class="pc-col"><div class="pc-bar ${cls}" style="height:${hpct}%" title="${esc(lab)} ${fmtV(x.v)}"></div></div>`;}).join('');
+  const labels=games.map(x=>{const r=x.r; const t=c.opp(r); const gr=t&&c.def?dGrade(t.rank,c.def.n):'';
+    const opp=(r.atVs==='@'?'@':'')+(r.opp&&r.opp.abbreviation||'');
+    const dt=r.date?new Date(r.date).toLocaleDateString([], {month:'numeric',day:'numeric'}):'';
+    return `<div class="pc-lab"><b>${fmtV(x.v)}</b><span>${esc(opp)}</span><span class="muted">${esc(dt)}</span>${gr?`<span class="pc-gr ${'AB'.includes(gr)?'good':'DF'.includes(gr)?'bad':''}">${gr} D</span>`:''}</div>`;}).join('');
+  el.innerHTML=`<div class="pchart">
+    <div class="pc-head"><div><span class="pc-big">${hasLine?fmtV(line):'—'}</span> <span class="pc-stat">${esc(lab)}</span></div><div class="pc-over">${hasLine?`${over} of ${vals.length} over`:'Enter a line'}</div></div>
+    <div class="pc-scroll"><div class="pc-inner"><div class="pc-plot">${hasLine?`<div class="pc-line" style="bottom:${line/max*100}%"><span>${fmtV(line)}</span></div>`:''}${bars}</div><div class="pc-labels">${labels}</div></div></div>
+    <div class="pc-foot"><b>${l5avg.toFixed(1)}</b> avg last ${last5.length} · <b>${wavg.toFixed(1)}</b> opp-weighted · ${vals.length} games</div></div>`;
+  const sc=el.querySelector('.pc-scroll'); if(sc) sc.scrollLeft=sc.scrollWidth;
 }
 document.addEventListener('input',e=>{ if(e.target&&(e.target.id==='propLine'||e.target.id==='propStat')) propCalc(); });
 document.addEventListener('change',e=>{ if(e.target&&e.target.id==='propStat') propCalc(); });
