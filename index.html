@@ -238,6 +238,7 @@ a{color:var(--home)}
       <div class="filters" id="filters">
         <button class="fchip" data-f="all" aria-pressed="true" type="button">All</button>
         <button class="fchip" data-f="live" aria-pressed="false" type="button">Live</button>
+        <button class="fchip" data-f="top" aria-pressed="false" type="button">Top 25</button>
         <button class="fchip" data-f="best" aria-pressed="false" type="button">★ Best picks</button>
         <button class="fchip" data-f="dis" aria-pressed="false" type="button">Model vs Vegas</button>
         <button class="fchip" data-f="picked" aria-pressed="false" type="button">Model games only</button>
@@ -264,12 +265,13 @@ const API=PROXY?'/api/espn/':'https://site.api.espn.com/apis/site/v2/sports/';
 const GEO=PROXY?'/api/geo?':'https://geocoding-api.open-meteo.com/v1/search?';
 const WX=PROXY?'/api/wx?':'https://api.open-meteo.com/v1/forecast?';
 const WEBAPI=PROXY?'/api/espnweb/':'https://site.web.api.espn.com/apis/';
-const LG_BY_ID={'28':'nfl','23':'cfb','46':'nba','10':'mlb'};
+const LG_BY_ID={'28':'nfl','23':'cfb','46':'nba','41':'cbb','10':'mlb'};
 const ESPNV2=PROXY?'/api/espnv2/':'https://site.api.espn.com/apis/v2/sports/';
 const LEAGUES={
   nfl:{label:'NFL',path:'football/nfl',web:'nfl',nav:'week',wx:true,stats:['totalYards','netPassingYards','rushingYards','firstDowns','thirdDownEff','turnovers','totalPenaltiesYards','possessionTime']},
   cfb:{label:'College FB',path:'football/college-football',web:'college-football',nav:'week',wx:true,params:{groups:'80',limit:'400'},stats:['totalYards','netPassingYards','rushingYards','firstDowns','thirdDownEff','turnovers','totalPenaltiesYards','possessionTime']},
   nba:{label:'NBA',path:'basketball/nba',web:'nba',nav:'day',wx:false,stats:['fieldGoalsMade-fieldGoalsAttempted','fieldGoalPct','threePointFieldGoalsMade-threePointFieldGoalsAttempted','threePointFieldGoalPct','totalRebounds','assists','turnovers','steals','blocks']},
+  cbb:{label:'College BB',path:'basketball/mens-college-basketball',web:'mens-college-basketball',nav:'day',wx:false,params:{groups:'50',limit:'400'},stats:['fieldGoalsMade-fieldGoalsAttempted','fieldGoalPct','threePointFieldGoalsMade-threePointFieldGoalsAttempted','threePointFieldGoalPct','totalRebounds','assists','turnovers','steals','blocks']},
   mlb:{label:'MLB',path:'baseball/mlb',web:'mlb',nav:'day',wx:true,stats:['hits','runs','errors','homeRuns','strikeouts','walks']}
 };
 const STATES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',CT:'Connecticut',DE:'Delaware',DC:'District of Columbia',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'};
@@ -419,7 +421,8 @@ async function enrich(tok){
   const evs=S.events; const small=evs.length<=16;
   const jobs=[];
   for(const g of evs){
-    if(g.state==='in'||S.open.has(g.id)||small) jobs.push(()=>loadSummary(g).then(ch=>ch&&tok===S.token&&repaint(g.id)));
+    const big=evs.length>40, key=!big||S.open.has(g.id)||(g.away.rank>0&&g.away.rank<=25)||(g.home.rank>0&&g.home.rank<=25)||!!findPick(g)||(S.filter!=='all'&&visible(g));
+    if((g.state==='in'&&key)||S.open.has(g.id)||small) jobs.push(()=>loadSummary(g).then(ch=>ch&&tok===S.token&&repaint(g.id)));
     if(evs.length<=40||S.open.has(g.id)) jobs.push(()=>loadWx(g).then(ch=>ch&&tok===S.token&&repaint(g.id)));
   }
   let i=0; const run=async()=>{while(i<jobs.length&&tok===S.token){const j=jobs[i++]; try{await j()}catch(e){}}};
@@ -435,7 +438,7 @@ function matchGame(g,q){
   return hay.some(h=>h&&String(h).toLowerCase().includes(q));
 }
 function visible(g){ if(S.q&&!matchGame(g,S.q)) return false; const p=findPick(g);
-  switch(S.filter){case 'live':return g.state==='in';case 'best':return !!(p&&p.best);case 'dis':return !!(p&&p.agrees===false);case 'picked':return !!p;default:return true;} }
+  switch(S.filter){case 'live':return g.state==='in';case 'top':return (g.away.rank>0&&g.away.rank<=25)||(g.home.rank>0&&g.home.rank<=25);case 'best':return !!(p&&p.best);case 'dis':return !!(p&&p.agrees===false);case 'picked':return !!p;default:return true;} }
 function render(){
   $('tabs').innerHTML=Object.entries(LEAGUES).map(([k,v])=>`<button class="tab" role="tab" type="button" data-l="${k}" aria-selected="${k===S.league}">${v.label}</button>`).join('')+`<button class="tab hist-tab" role="tab" type="button" data-l="stars" aria-selected="${S.league==='stars'}">★ Today</button><button class="tab hist-tab" role="tab" type="button" data-l="hist" aria-selected="${S.league==='hist'}">History</button>`;
   const isH=S.league==='hist'||S.league==='stars';
@@ -588,7 +591,7 @@ async function searchPlayers(q,autoName){
   box.innerHTML=`<div class="panel">${gameNote()}<p class="muted" style="margin:0">Searching players…</p></div>`;
   let found=[], err=null;
   try{
-    const d=await getJSON(WEBAPI+'common/v3/search?limit=10&type=player&query='+encodeURIComponent(q),12000);
+    const d=await getJSON(WEBAPI+'common/v3/search?limit=20&type=player&query='+encodeURIComponent(q),12000);
     const seen=new Set();
     (function walk(o){ if(!o||typeof o!=='object') return; if(Array.isArray(o)){o.forEach(walk);return;}
       const m=/l:(\d+)~a:(\d+)/.exec(o.uid||'');
@@ -600,7 +603,7 @@ async function searchPlayers(q,autoName){
   if(autoName){ const hit=found.find(f=>f.name.toLowerCase()===autoName.toLowerCase())||(found.length===1?found[0]:null); if(hit) return openPlayer(hit); }
   box.innerHTML=`<div class="panel">${gameNote()}
     ${found.length?`<h3>Players</h3><div class="plist">${found.map(f=>`<button class="pbtn" type="button" data-player="${f.lg}|${f.id}|${esc(f.name)}|${esc(f.img)}">${f.img?`<img src="${esc(f.img)}" alt="" loading="lazy">`:'<span class="ph"></span>'}<span><b>${esc(f.name)}</b><span>${esc(f.sub)}</span></span><em>${HLG[f.lg]||''}</em></button>`).join('')}</div>`
-    :`<p class="muted" style="margin:0">${err?`Player search couldn’t reach ESPN (${esc(err)}).`:`No NFL, college football, NBA or MLB players match “${esc(q)}”.`}</p>`}</div>`;
+    :`<p class="muted" style="margin:0">${err?`Player search couldn’t reach ESPN (${esc(err)}).`:`No NFL, college football, NBA, college basketball or MLB players match “${esc(q)}”.`}</p>`}</div>`;
 }
 const val=(o,...ks)=>{for(const k of ks){ if(o==null) return undefined; o=o[k]; } return o;};
 /* opponent defense: points (runs) allowed per game from ESPN standings */
@@ -634,7 +637,7 @@ function wavCols(lg,role){
     if(role.startsWith('rush')) return {anchor:['CAR','ATT'],cols:[['CAR',['rushingAttempts']],['YDS',['rushingYards']],['TD',['rushingTouchdowns']]]};
     return {anchor:['REC'],cols:[['REC',['receptions']],['YDS',['receivingYards']],['TD',['receivingTouchdowns']]]};
   }
-  if(lg==='nba') return {anchor:[],cols:[['PTS',['points']],['REB',['totalRebounds','rebounds']],['AST',['assists']],['MIN',['minutes']]]};
+  if(lg==='nba'||lg==='cbb') return {anchor:[],cols:[['PTS',['points']],['REB',['totalRebounds','rebounds']],['AST',['assists']],['MIN',['minutes']]]};
   return {anchor:[],cols:[['H',['hits']],['HR',['homeRuns']],['RBI',['RBIs','RBI','runsBattedIn']]]};
 }
 function colIndex(labels,names,label,cands,anchor){
@@ -697,7 +700,7 @@ function scoreRankHTML(g){
   const edge=(or,dr,nO,nD)=>{ const x=or/nO-dr/nD; return Math.abs(x)<0.15?'even matchup':x<0?'edge to the offense':'edge to the defense'; };
   return `<div><h4>Team rankings · scoring per game</h4><div class="tbl"><table class="btable rk-tbl"><thead><tr><th>Team</th><th>Off ${unit}/G</th><th>Def ${unit}/G</th><th>Net</th></tr></thead><tbody>${row(A,g.away)}${row(H,g.home)}</tbody></table></div>
     <ul class="rk-m">${mline(A,g.away,g.home,H)}${mline(H,g.home,g.away,A)}</ul>
-    <p class="muted" style="margin:4px 0 0;font-size:12.5px">Ranks out of ${d.n} ${lg==='cfb'?'FBS teams':'teams'} this season from ESPN standings. #1 offense scores the most; #1 defense allows the fewest. Green = top 20%, red = bottom 20%.</p></div>`;
+    <p class="muted" style="margin:4px 0 0;font-size:12.5px">Ranks out of ${d.n} ${lg==='cfb'?'FBS teams':lg==='cbb'?'Division I teams':'teams'} this season from ESPN standings. #1 offense scores the most; #1 defense allows the fewest. Green = top 20%, red = bottom 20%.</p></div>`;
 }
 function wavHTML(id,role){
   if(!id) return ''; const c=S.wav[S.league+'|'+id];
@@ -739,7 +742,7 @@ function h2hLast(lg,d){
   if(lg==='mlb') o.sp=bp.map(t=>{const c=(t.statistics||[]).find(x=>x.type==='pitching'||(x.labels||[]).includes('IP')); if(!c) return null;
     const a=(c.athletes||[]).find(x=>x.starter)||(c.athletes||[])[0]; if(!a) return null; const L=c.labels||[]; const v=l=>{const i=L.indexOf(l); return i>=0?a.stats[i]:''};
     return {abbr:t.team&&t.team.abbreviation,name:nm(a),line:`${v('IP')} IP, ${v('ER')} ER, ${v('K')} K`};}).filter(Boolean);
-  if(lg==='nba') o.dnp=bp.map(t=>({abbr:t.team&&t.team.abbreviation,list:(((t.statistics||[])[0]||{}).athletes||[]).filter(a=>a.didNotPlay&&!/coach/i.test(a.reason||'')).map(a=>nm(a))})).filter(t=>t.list.length);
+  if(lg==='nba'||lg==='cbb') o.dnp=bp.map(t=>({abbr:t.team&&t.team.abbreviation,list:(((t.statistics||[])[0]||{}).athletes||[]).filter(a=>a.didNotPlay&&!/coach/i.test(a.reason||'')).map(a=>nm(a))})).filter(t=>t.list.length);
   return o;
 }
 function h2hATS(line,m){
@@ -867,7 +870,7 @@ document.addEventListener('click',e=>{
 });
 
 /* ---------- pick history ---------- */
-const HLG={nfl:'NFL',cfb:'CFB',nba:'NBA',mlb:'MLB'};
+const HLG={nfl:'NFL',cfb:'CFB',nba:'NBA',cbb:'CBB',mlb:'MLB'};
 const hkey=(lg,d,a,h)=>lg+'|'+d+'|'+nrm(a)+'|'+nrm(h);
 const ynMap=v=>{v=String(v==null?'':v).trim(); return v==='✓'?'W':v==='✗'?'L':v==='P'?'P':v==='T'?'T':v==='='?'E':null;};
 function baseHistory(){
