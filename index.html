@@ -271,7 +271,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-07-mv2';
+const BUILD='2026-11-07-live3';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -378,8 +378,11 @@ async function loadBoard(){
   render(); schedule(); enrich(tok);
 }
 function schedule(){
-  clearTimeout(S.timer); const live=S.events.some(g=>g.state==='in');
-  const ms=S.err?30000:live?30000:120000; S.next=Date.now()+ms;
+  clearTimeout(S.timer); const now=Date.now(); const live=S.events.some(g=>g.state==='in');
+  // a game at (or past) its start time that ESPN still shows as "pre" is about to go live: check often
+  const starting=S.events.some(g=>g.state==='pre'&&g.date-now<90000&&now-g.date<3*36e5);
+  const nextStart=Math.min(...S.events.filter(g=>g.state==='pre'&&g.date>now).map(g=>g.date-now),Infinity);
+  const ms=S.err?30000:(live||starting)?20000:Math.max(20000,Math.min(120000,nextStart+5000)); S.next=now+ms;
   S.timer=setTimeout(loadBoard,ms);
 }
 function sumTTL(g){return g.state==='in'?25000:g.state==='pre'?600000:1800000}
@@ -589,7 +592,7 @@ function wake(){ if(document.hidden) return; if(LEAGUES[S.league]&&(!S.last||Dat
 document.addEventListener('visibilitychange',wake);
 window.addEventListener('focus',wake);
 window.addEventListener('pageshow',e=>{ if(e.persisted) wake(); });
-setInterval(()=>{ if(document.hidden) return; if(LEAGUES[S.league]&&S.last&&Date.now()-S.last>(S.events.some(g=>g.state==='in')?60000:180000)) loadBoard(); else if(S.league==='stars'&&S.stLast&&Date.now()-S.stLast>150000) loadStars(); else if(S.league==='mv'&&S.mvLast&&Date.now()-S.mvLast>(S.mvHot?45000:200000)) loadMV(); },15000);
+setInterval(()=>{ if(document.hidden) return; if(LEAGUES[S.league]&&S.last&&Date.now()-S.last>(S.events.some(g=>g.state==='in'||(g.state==='pre'&&g.date-Date.now()<90000&&Date.now()-g.date<3*36e5))?45000:150000)) loadBoard(); else if(S.league==='stars'&&S.stLast&&Date.now()-S.stLast>150000) loadStars(); else if(S.league==='mv'&&S.mvLast&&Date.now()-S.mvLast>(S.mvHot?45000:200000)) loadMV(); },15000);
 setInterval(()=>{ if(S.league==='hist'){ $('upd').textContent=S.hBusy?'Grading recent picks…':(S.dataUpdated?'Data updated '+S.dataUpdated:'Pick history'); return; } if(S.league==='stars'){ $('upd').textContent=S.stBusy?'Loading scores…':'★ Best Picks'; return; } if(S.league==='mv'){ $('upd').textContent=S.mvLast?'Updated '+new Date(S.mvLast).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'})+(S.mvHot?' · live every 20s':''):'Multiview'; return; } if(!S.last) return; const s=Math.max(0,Math.round((S.next-Date.now())/1000));
   $('upd').textContent=`Updated ${S.last.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'})} · next in ${s}s`; },1000);
 
