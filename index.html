@@ -560,11 +560,11 @@ function step(dir){
 $('prev').onclick=()=>step(-1); $('next').onclick=()=>step(1);
 $('today').onclick=()=>{S.date=null;S.week=null;S.seasontype=null;S.events=[];S.open.clear();render();loadBoard();};
 $('refresh').onclick=()=>{ if(S.league==='hist'){S.hRows=null;loadData().then(loadHistory);return;} if(S.league==='stars'){loadData().then(loadStars);return;} S.sum={};loadBoard();};
-function wake(){ if(!document.hidden&&LEAGUES[S.league]&&(!S.last||Date.now()-S.last>20000)) loadBoard(); }
+function wake(){ if(document.hidden) return; if(LEAGUES[S.league]&&(!S.last||Date.now()-S.last>20000)) loadBoard(); else if(S.league==='stars'&&(!S.stLast||Date.now()-S.stLast>20000)) loadStars(); }
 document.addEventListener('visibilitychange',wake);
 window.addEventListener('focus',wake);
 window.addEventListener('pageshow',e=>{ if(e.persisted) wake(); });
-setInterval(()=>{ if(!document.hidden&&LEAGUES[S.league]&&S.last&&Date.now()-S.last>(S.events.some(g=>g.state==='in')?60000:180000)) loadBoard(); },15000);
+setInterval(()=>{ if(document.hidden) return; if(LEAGUES[S.league]&&S.last&&Date.now()-S.last>(S.events.some(g=>g.state==='in')?60000:180000)) loadBoard(); else if(S.league==='stars'&&S.stLast&&Date.now()-S.stLast>150000) loadStars(); },15000);
 setInterval(()=>{ if(S.league==='hist'){ $('upd').textContent=S.hBusy?'Grading recent picks…':(S.dataUpdated?'Data updated '+S.dataUpdated:'Pick history'); return; } if(S.league==='stars'){ $('upd').textContent=S.stBusy?'Loading scores…':'★ Best Picks'; return; } if(!S.last) return; const s=Math.max(0,Math.round((S.next-Date.now())/1000));
   $('upd').textContent=`Updated ${S.last.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'})} · next in ${s}s`; },1000);
 
@@ -1043,12 +1043,18 @@ async function loadStars(){
   const list=[];
   for(const lg of Object.keys(LEAGUES)){ const P=MP[lg]; if(!P||!P.games) continue;
     for(const p of P.games){ if(!p.best||!p.date) continue; const d=new Date(p.date+'T12:00:00'); if(d<today||d>lim) continue; list.push({lg,p}); } }
-  S.stars=list; S.stEv={}; renderStars();
-  const tasks=[...new Set(list.map(x=>x.lg+'|'+x.p.date.replace(/-/g,'')))]; if(!tasks.length) return;
-  S.stBusy=true; const tok=S.token;
+  if(S.stFlight) return;
+  const first=!S.stEv||!S.stars; S.stars=list; if(!S.stEv) S.stEv={}; renderStars();
+  const tasks=[...new Set(list.map(x=>x.lg+'|'+x.p.date.replace(/-/g,'')))]; if(!tasks.length){ S.stLast=Date.now(); return; }
+  S.stBusy=first; S.stFlight=true; if(first) renderStars(); const tok=S.token;
   await Promise.all(tasks.map(async t=>{ const [lg,d]=t.split('|'); const L=LEAGUES[lg]; const q=new URLSearchParams(L.params||{}); q.set('dates',d);
     try{ const data=await getJSON(API+L.path+'/scoreboard?'+q,15000); for(const ev of (data.events||[]).map(norm)) S.stEv[lg+'|'+ev.id]=ev; }catch(e){} }));
-  S.stBusy=false; if(tok===S.token&&S.league==='stars') renderStars();
+  S.stBusy=false; S.stFlight=false; S.stLast=Date.now(); if(tok===S.token&&S.league==='stars') renderStars();
+  // Keep ★ Today live: every 30s while a ★ game is live or about to start, else every 2 min
+  clearTimeout(S.stTimer);
+  if(S.league==='stars'){ const soon=Date.now()+10*60000;
+    const hot=Object.values(S.stEv).some(e=>e&&(e.state==='in'||(e.state==='pre'&&e.date<soon))&&(S.stars||[]).some(({p})=>p.id?p.id===e.id:(teamIs(p.away,e.away)&&teamIs(p.home,e.home))));
+    S.stTimer=setTimeout(()=>{ if(S.league==='stars') loadStars(); }, hot?30000:120000); }
 }
 function renderStars(){
   const el=$('hist'); const list=S.stars||[];
