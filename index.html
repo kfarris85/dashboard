@@ -271,6 +271,18 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
+const BUILD='2026-11-07-mv2';
+/* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
+async function checkBuild(){
+  try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
+    const m=/const BUILD='([^']+)'/.exec(await r.text()); if(!m||m[1]===BUILD||document.getElementById('upbar')) return;
+    const b=document.createElement('button'); b.id='upbar'; b.type='button'; b.textContent='New version of the dashboard is ready — tap to update';
+    b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:50;border:0;padding:14px max(16px,env(safe-area-inset-left,0px)) calc(14px + env(safe-area-inset-bottom,0px));background:var(--accent);color:var(--panel);font:700 15px/1.2 var(--f-body);cursor:pointer';
+    b.onclick=()=>location.replace(location.pathname+'?v='+Date.now()); document.body.appendChild(b);
+  }catch(e){}
+}
+setTimeout(checkBuild,4000); setInterval(()=>{ if(!document.hidden) checkBuild(); },300000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkBuild(); });
 const API=PROXY?'/api/espn/':'https://site.api.espn.com/apis/site/v2/sports/';
 const GEO=PROXY?'/api/geo?':'https://geocoding-api.open-meteo.com/v1/search?';
 const WX=PROXY?'/api/wx?':'https://api.open-meteo.com/v1/forecast?';
