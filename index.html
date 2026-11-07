@@ -286,7 +286,9 @@ const fmtKick=d=>d.toLocaleString([], {weekday:'short',month:'numeric',day:'nume
 
 async function getJSON(url,ms=12000){
   const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),ms);
-  try{const r=await fetch(url,{signal:ctl.signal}); if(!r.ok) throw new Error('HTTP '+r.status); return await r.json();}
+  // Never serve a cached copy: live scores must be fresh on every poll (phones cache aggressively)
+  if(/espn/i.test(url)) url+=(url.includes('?')?'&':'?')+'_='+Date.now();
+  try{const r=await fetch(url,{signal:ctl.signal,cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return await r.json();}
   finally{clearTimeout(t)}
 }
 
@@ -558,7 +560,11 @@ function step(dir){
 $('prev').onclick=()=>step(-1); $('next').onclick=()=>step(1);
 $('today').onclick=()=>{S.date=null;S.week=null;S.seasontype=null;S.events=[];S.open.clear();render();loadBoard();};
 $('refresh').onclick=()=>{ if(S.league==='hist'){S.hRows=null;loadData().then(loadHistory);return;} if(S.league==='stars'){loadData().then(loadStars);return;} S.sum={};loadBoard();};
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&LEAGUES[S.league]&&S.last&&Date.now()-S.last>30000) loadBoard(); });
+function wake(){ if(!document.hidden&&LEAGUES[S.league]&&(!S.last||Date.now()-S.last>20000)) loadBoard(); }
+document.addEventListener('visibilitychange',wake);
+window.addEventListener('focus',wake);
+window.addEventListener('pageshow',e=>{ if(e.persisted) wake(); });
+setInterval(()=>{ if(!document.hidden&&LEAGUES[S.league]&&S.last&&Date.now()-S.last>(S.events.some(g=>g.state==='in')?60000:180000)) loadBoard(); },15000);
 setInterval(()=>{ if(S.league==='hist'){ $('upd').textContent=S.hBusy?'Grading recent picks…':(S.dataUpdated?'Data updated '+S.dataUpdated:'Pick history'); return; } if(S.league==='stars'){ $('upd').textContent=S.stBusy?'Loading scores…':'★ Best Picks'; return; } if(!S.last) return; const s=Math.max(0,Math.round((S.next-Date.now())/1000));
   $('upd').textContent=`Updated ${S.last.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'})} · next in ${s}s`; },1000);
 
