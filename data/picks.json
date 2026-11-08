@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-08T11:09:46-06:00",
+ "updated": "2026-11-08T16:09:53-06:00",
  "leagues": {
   "nfl": {
    "sheet": "2026 Week 9 Picks — Saturday update (Nov 07)",
@@ -594,8 +594,8 @@
    ]
   },
   "nba": {
-   "sheet": "2026-27 NBA Picks (Nov 8 early)",
-   "url": "https://docs.google.com/spreadsheets/d/17qL7GXmxkBJM_Lo0Kzlc2wPTm9-XTzjxrR99GMoWsc4/edit?usp=drivesdk&ouid=100088946090688909872",
+   "sheet": "2026-27 NBA Picks (Nov 8)",
+   "url": "https://docs.google.com/spreadsheets/d/1VaF5Z-c0QwnqBL6Rta0achaFSzHcrVjqFqYSMmusLpw/edit?usp=drivesdk&ouid=100088946090688909872",
    "games": [
     {
      "id": "401909938",
@@ -780,6 +780,144 @@
      "total": 237.5,
      "lean": "Under",
      "why": "PHI lineup +4.4 pts; PHI team form +4.4; home court +2.1; Nic Claxton (CHI) 50% to play; Norman Powell (CHI) 50% to play"
+    },
+    {
+     "id": "401909946",
+     "date": "2026-11-08",
+     "away": "LAL",
+     "home": "DET",
+     "pick": "DET",
+     "win": 67,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 71,
+     "line": "DET -7.5",
+     "spreadPick": "LAL +7.5",
+     "cover": 57,
+     "agrees": true,
+     "proj": [
+      106,
+      112
+     ],
+     "fTotal": 225.9,
+     "total": 217.5,
+     "lean": "Over",
+     "why": "DET lineup +3.2 pts; DET team form +0.3; home court +2.1; Luka Doncic (LAL) out; Jalen Duren (DET) out; Elijah Harkless (DET) out"
+    },
+    {
+     "id": "401909947",
+     "date": "2026-11-08",
+     "away": "UTAH",
+     "home": "MIN",
+     "pick": "MIN",
+     "win": 85,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 83,
+     "line": "MIN -11.5",
+     "spreadPick": "MIN -11.5",
+     "cover": 53,
+     "agrees": true,
+     "proj": [
+      105,
+      117
+     ],
+     "fTotal": 231.8,
+     "total": 221.5,
+     "lean": "Over",
+     "why": "MIN lineup +5.0 pts; MIN team form +5.2; home court +2.1; Jaren Jackson Jr. (UTAH) out; Jusuf Nurkic (UTAH) out; Keyonte George (UTAH) 50% to play; Lauri Markkanen (UTAH) 50% to play; Anthony Edwards (MIN) out"
+    },
+    {
+     "id": "401909948",
+     "date": "2026-11-08",
+     "away": "BKN",
+     "home": "DAL",
+     "pick": "DAL",
+     "win": 76,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 73,
+     "line": "DAL -7.5",
+     "spreadPick": "DAL -7.5",
+     "cover": 54,
+     "agrees": true,
+     "proj": [
+      107,
+      116
+     ],
+     "fTotal": 225.4,
+     "total": 222.5,
+     "lean": "Over",
+     "why": "DAL lineup +2.1 pts; DAL team form +2.4; home court +2.1; BKN on back-to-back; Mikel Brown Jr. (BKN) out; Ben Saraf (BKN) out"
+    },
+    {
+     "id": "401909949",
+     "date": "2026-11-08",
+     "away": "BOS",
+     "home": "MIL",
+     "pick": "BOS",
+     "win": 80,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 85,
+     "line": "BOS -12.5",
+     "spreadPick": "MIL +12.5",
+     "cover": 57,
+     "agrees": true,
+     "proj": [
+      116,
+      106
+     ],
+     "fTotal": 225,
+     "total": 221.5,
+     "lean": "Over",
+     "why": "BOS lineup +7.9 pts; BOS team form +4.5; home court +2.1; Devin Carter (BOS) out; Pete Nance (MIL) out; Cormac Ryan (MIL) out"
+    },
+    {
+     "id": "401909950",
+     "date": "2026-11-08",
+     "away": "NO",
+     "home": "LAC",
+     "pick": "LAC",
+     "win": 57,
+     "conf": "Toss-up",
+     "best": false,
+     "vegas": 46,
+     "line": "NO -1.5",
+     "spreadPick": "LAC +1.5",
+     "cover": 62,
+     "agrees": false,
+     "proj": [
+      112,
+      114
+     ],
+     "fTotal": 231.5,
+     "total": 226.5,
+     "lean": "Over",
+     "why": "LAC lineup +2.0 pts; NO team form +1.8; home court +2.1; Yves Missi (NO) out; Brandon Ingram (LAC) out; Jordan Miller (LAC) out; Vegas favors NO — lower confidence"
+    },
+    {
+     "id": "401909951",
+     "date": "2026-11-08",
+     "away": "MIA",
+     "home": "SAC",
+     "pick": "MIA",
+     "win": 62,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 79,
+     "line": "MIA -10.5",
+     "spreadPick": "SAC +10.5",
+     "cover": 72,
+     "agrees": true,
+     "proj": [
+      121,
+      117
+     ],
+     "fTotal": 235.7,
+     "total": 237.5,
+     "lean": "Under",
+     "why": "MIA lineup +5.0 pts; MIA team form +0.7; home court +2.1; Maxime Raynaud (SAC) out"
     }
    ]
   },
