@@ -1,9 +1,9 @@
 {
- "updated": "2026-11-07T16:09:32-06:00",
+ "updated": "2026-11-07T20:09:37-06:00",
  "leagues": {
   "nfl": {
-   "sheet": "2026 Week 9 Picks (Nov 04)",
-   "url": "https://docs.google.com/spreadsheets/d/1UbvO1wsatHREycHf6_NmSfUA508TyfAmE_I0Mp5rarc/edit?usp=drivesdk&ouid=100088946090688909872",
+   "sheet": "2026 Week 9 Picks — Saturday update (Nov 07)",
+   "url": "https://docs.google.com/spreadsheets/d/1L02oppYLuIPi4K_-Gg5QNlEvuBkt80jSYqTE4xr0C3o/edit?usp=drivesdk&ouid=100088946090688909872",
    "games": [
     {
      "date": "2026-11-08",
@@ -13,19 +13,19 @@
      "win": 53,
      "conf": "Toss-up",
      "best": false,
-     "vegas": 58,
+     "vegas": 61,
      "line": "Bengals -3",
      "spreadPick": "Falcons +3",
      "cover": 55,
      "agrees": true,
      "proj": [
-      24.2,
-      23.2
+      24.4,
+      23.4
      ],
      "fTotal": 48.6,
      "total": 52.5,
      "lean": "Under",
-     "why": "Neutral site. Bengals are #7 in Power Rank vs #22 (+3.8 vs -2.0 power rating). Key edge: their #5 offense vs the #10 defense. 2026 form backs it up (+6.9 vs -2.2 pt diff/G)."
+     "why": "Neutral site. Bengals are #7 in Power Rank vs #22 (+3.8 vs -2.1 power rating). Key edge: their #4 offense vs the #10 defense. 2026 form backs it up (+6.9 vs -2.2 pt diff/G)."
     },
     {
      "date": "2026-11-08",
@@ -35,41 +35,41 @@
      "win": 57,
      "conf": "Toss-up",
      "best": false,
-     "vegas": 57,
+     "vegas": 56,
      "line": "Broncos -2.5",
      "spreadPick": "Broncos -2.5",
-     "cover": 50,
+     "cover": 51,
      "agrees": true,
      "proj": [
-      25,
+      25.1,
       22.4
      ],
      "fTotal": 45.5,
-     "total": 43.5,
+     "total": 44.5,
      "lean": "Over",
-     "why": "Broncos are #10 in Power Rank vs #16 (+2.8 vs -0.3 power rating). Key edge: their #12 offense vs the #25 defense. Wins despite playing on the road."
+     "why": "Broncos are #9 in Power Rank vs #16 (+2.9 vs -0.3 power rating). Key edge: their #12 offense vs the #25 defense. Wins despite playing on the road."
     },
     {
      "date": "2026-11-08",
      "away": "Cowboys",
      "home": "Colts",
      "pick": "Colts",
-     "win": 54,
+     "win": 55,
      "conf": "Toss-up",
      "best": false,
-     "vegas": 29,
-     "line": "Cowboys -6",
-     "spreadPick": "Colts +6",
-     "cover": 69,
+     "vegas": 33,
+     "line": "Cowboys -5.5",
+     "spreadPick": "Colts +5.5",
+     "cover": 68,
      "agrees": false,
      "proj": [
-      25.1,
-      26.9
+      25.2,
+      27.2
      ],
      "fTotal": 52.2,
      "total": 51.5,
      "lean": "Over",
-     "why": "Close call: Colts rank lower (#28 vs #18, -4.2 vs -0.6) but the matchup math tips their way. Key edge: their #27 offense vs the #32 defense. Home field adds ~2. But Cowboys have been better in 2026 (+0.8 vs -7.6 pt diff/G). Model disagrees with Vegas (away favored by 6.0)."
+     "why": "Close call: Colts rank lower (#28 vs #18, -4.1 vs -0.7) but the matchup math tips their way. Key edge: their #26 offense vs the #32 defense. Home field adds ~2. But Cowboys have been better in 2026 (+0.8 vs -7.6 pt diff/G). Model disagrees with Vegas (away favored by 5.5)."
     },
     {
      "date": "2026-11-08",
@@ -79,7 +79,7 @@
      "win": 75,
      "conf": "Strong",
      "best": true,
-     "vegas": 82,
+     "vegas": 81,
      "line": "Chiefs -9.5",
      "spreadPick": "Chiefs -9.5",
      "cover": 52,
@@ -89,9 +89,9 @@
       29.4
      ],
      "fTotal": 43.7,
-     "total": 47.5,
+     "total": 48.5,
      "lean": "Under",
-     "why": "Chiefs are #11 in Power Rank vs #24 (+2.4 vs -3.4 power rating). Key edge: their #10 offense vs the #28 defense. Home field adds ~2. 2026 form backs it up (+5.1 vs -2.2 pt diff/G)."
+     "why": "Chiefs are #11 in Power Rank vs #24 (+2.4 vs -3.3 power rating). Key edge: their #10 offense vs the #28 defense. Home field adds ~2. 2026 form backs it up (+5.1 vs -2.2 pt diff/G)."
     },
     {
      "date": "2026-11-08",
@@ -101,63 +101,63 @@
      "win": 61,
      "conf": "Lean",
      "best": true,
-     "vegas": 75,
-     "line": "Lions -7",
-     "spreadPick": "Dolphins +7",
-     "cover": 57,
+     "vegas": 71,
+     "line": "Lions -6.5",
+     "spreadPick": "Dolphins +6.5",
+     "cover": 55,
      "agrees": true,
      "proj": [
-      27.9,
+      28,
       23.5
      ],
      "fTotal": 48.8,
-     "total": 50.5,
+     "total": 49.5,
      "lean": "Under",
-     "why": "Lions are #8 in Power Rank vs #26 (+3.1 vs -3.4 power rating). Key edge: their #4 offense vs the #30 defense. Wins despite playing on the road. 2026 form backs it up (+3.3 vs -9.1 pt diff/G)."
+     "why": "Lions are #8 in Power Rank vs #26 (+3.2 vs -3.4 power rating). Key edge: their #3 offense vs the #30 defense. Wins despite playing on the road. 2026 form backs it up (+3.3 vs -9.1 pt diff/G)."
     },
     {
      "date": "2026-11-08",
      "away": "Browns",
      "home": "Saints",
      "pick": "Saints",
-     "win": 58,
-     "conf": "Toss-up",
+     "win": 66,
+     "conf": "Lean",
      "best": false,
-     "vegas": 52,
-     "line": "Saints -1.5",
-     "spreadPick": "Saints -1.5",
-     "cover": 54,
+     "vegas": 60,
+     "line": "Saints -3",
+     "spreadPick": "Saints -3",
+     "cover": 58,
      "agrees": true,
      "proj": [
-      17.1,
-      20.1
+      13.9,
+      20.2
      ],
      "fTotal": 43,
      "total": 42.5,
      "lean": "Over",
-     "why": "Saints are #23 in Power Rank vs #29 (-2.7 vs -4.3 power rating). Key edge: their #23 defense vs the #31 offense. Home field adds ~2."
+     "why": "Saints are #23 in Power Rank vs #29 (-2.8 vs -4.4 power rating). Key edge: their #23 defense vs the #30 offense. Browns start Shedeur Sanders instead of Deshaun Watson (-4 pts by his track record). Home field adds ~2. Model likes Saints by 6.3, more than Vegas' 3.0."
     },
     {
      "date": "2026-11-08",
      "away": "Giants",
      "home": "Eagles",
-     "pick": "Giants",
-     "win": 51,
+     "pick": "Eagles",
+     "win": 52,
      "conf": "Toss-up",
      "best": false,
-     "vegas": 60,
-     "line": "Giants -3.5",
-     "spreadPick": "Eagles +3.5",
-     "cover": 58,
-     "agrees": true,
+     "vegas": 42,
+     "line": "Giants -3",
+     "spreadPick": "Eagles +3",
+     "cover": 60,
+     "agrees": false,
      "proj": [
       17.7,
-      17.2
+      18.6
      ],
      "fTotal": 44.5,
-     "total": 39.5,
+     "total": 38.5,
      "lean": "Over",
-     "why": "Giants are #17 in Power Rank vs #30 (-0.6 vs -5.8 power rating). Key edge: their #16 defense vs the #29 offense. Eagles start Tanner McKee instead of Jalen Hurts (-2 pts by his track record). Risk: Giants start J.J. McCarthy instead of Jaxson Dart (-5 pts by his track record). Wins despite playing on the road. 2026 form backs it up (+0.3 vs -8.1 pt diff/G). Model has it closer (0.5) than Vegas (3.5)."
+     "why": "Close call: Eagles rank lower (#30 vs #17, -5.7 vs -0.6) but the matchup math tips their way. Key edge: their #20 defense vs the #16 offense. Giants start J.J. McCarthy instead of Jaxson Dart (-5 pts by his track record). Risk: Eagles start Joe Milton III instead of Jalen Hurts (-0 pts by his track record). Home field adds ~2. But Giants have been better in 2026 (+0.3 vs -8.1 pt diff/G). Model disagrees with Vegas (away favored by 3.0)."
     },
     {
      "date": "2026-11-08",
@@ -167,41 +167,41 @@
      "win": 65,
      "conf": "Lean",
      "best": false,
-     "vegas": 67,
-     "line": "Rams -5.5",
-     "spreadPick": "Rams -5.5",
-     "cover": 51,
+     "vegas": 68,
+     "line": "Rams -4.5",
+     "spreadPick": "Rams -4.5",
+     "cover": 54,
      "agrees": true,
      "proj": [
-      26.3,
+      26.4,
       20.4
      ],
      "fTotal": 47.7,
      "total": 47.5,
      "lean": "Over",
-     "why": "Rams are #4 in Power Rank vs #25 (+5.0 vs -3.4 power rating). Key edge: their #9 offense vs the #27 defense. Wins despite playing on the road."
+     "why": "Rams are #4 in Power Rank vs #25 (+5.1 vs -3.4 power rating). Key edge: their #9 offense vs the #27 defense. Wins despite playing on the road."
     },
     {
      "date": "2026-11-08",
      "away": "Texans",
      "home": "Chargers",
      "pick": "Chargers",
-     "win": 52,
+     "win": 51,
      "conf": "Toss-up",
      "best": false,
-     "vegas": 34,
-     "line": "Texans -4.5",
-     "spreadPick": "Chargers +4.5",
-     "cover": 63,
+     "vegas": 32,
+     "line": "Texans -6",
+     "spreadPick": "Chargers +6",
+     "cover": 66,
      "agrees": false,
      "proj": [
-      18.2,
+      18.3,
       18.8
      ],
      "fTotal": 42.5,
      "total": 40.5,
      "lean": "Over",
-     "why": "Close call: Chargers rank lower (#31 vs #14, -6.4 vs +0.6) but the matchup math tips their way. Key edge: their #5 defense vs the #15 offense. Justin Herbert: +4 pts — recent passing below his longer track record. Home field adds ~2. But Texans have been better in 2026 (-0.7 vs -10.9 pt diff/G). Model disagrees with Vegas (away favored by 4.5)."
+     "why": "Close call: Chargers rank lower (#31 vs #14, -6.4 vs +0.7) but the matchup math tips their way. Key edge: their #5 defense vs the #15 offense. Justin Herbert: +4 pts — recent passing below his longer track record. Home field adds ~2. But Texans have been better in 2026 (-0.7 vs -10.9 pt diff/G). Model disagrees with Vegas (away favored by 6.0)."
     },
     {
      "date": "2026-11-08",
@@ -212,18 +212,18 @@
      "conf": "Strong",
      "best": true,
      "vegas": 80,
-     "line": "49ers -10",
-     "spreadPick": "49ers -10",
-     "cover": 52,
+     "line": "49ers -9.5",
+     "spreadPick": "49ers -9.5",
+     "cover": 53,
      "agrees": true,
      "proj": [
       19.8,
       30.6
      ],
      "fTotal": 49.2,
-     "total": 52.5,
+     "total": 51.5,
      "lean": "Under",
-     "why": "49ers are #3 in Power Rank vs #27 (+5.9 vs -3.6 power rating). Key edge: their #2 offense vs the #29 defense. Home field adds ~2. 2026 form backs it up (+8.3 vs -1.1 pt diff/G)."
+     "why": "49ers are #3 in Power Rank vs #27 (+6.0 vs -3.6 power rating). Key edge: their #2 offense vs the #29 defense. Home field adds ~2. 2026 form backs it up (+8.3 vs -1.1 pt diff/G)."
     },
     {
      "date": "2026-11-08",
@@ -233,41 +233,41 @@
      "win": 55,
      "conf": "Toss-up",
      "best": false,
-     "vegas": 60,
-     "line": "Patriots -3",
-     "spreadPick": "Packers +3",
-     "cover": 53,
+     "vegas": 61,
+     "line": "Patriots -3.5",
+     "spreadPick": "Packers +3.5",
+     "cover": 54,
      "agrees": true,
      "proj": [
       21.9,
-      23.9
+      24
      ],
      "fTotal": 43.3,
-     "total": 46.5,
+     "total": 44.5,
      "lean": "Under",
-     "why": "Patriots are #5 in Power Rank vs #9 (+4.7 vs +2.9 power rating). Key edge: their #6 offense vs the #8 defense. Home field adds ~2."
+     "why": "Patriots are #5 in Power Rank vs #10 (+4.8 vs +2.9 power rating). Key edge: their #6 offense vs the #8 defense. Home field adds ~2."
     },
     {
      "date": "2026-11-08",
      "away": "Cardinals",
      "home": "Seahawks",
      "pick": "Seahawks",
-     "win": 66,
+     "win": 61,
      "conf": "Lean",
      "best": true,
-     "vegas": 86,
-     "line": "Seahawks -12.5",
-     "spreadPick": "Cardinals +12.5",
-     "cover": 65,
+     "vegas": 79,
+     "line": "Seahawks -8.5",
+     "spreadPick": "Cardinals +8.5",
+     "cover": 60,
      "agrees": true,
      "proj": [
       17.2,
-      23.6
+      21.6
      ],
      "fTotal": 47.5,
-     "total": 41.5,
+     "total": 39.5,
      "lean": "Over",
-     "why": "Seahawks are #13 in Power Rank vs #21 (+1.0 vs -2.0 power rating). Key edge: their #3 defense vs the #17 offense. Cardinals start Gardner Minshew instead of Jacoby Brissett (-2 pts by his track record). Home field adds ~2. 2026 form backs it up (+3.2 vs -7.9 pt diff/G). Model has it closer (6.4) than Vegas (12.5)."
+     "why": "Seahawks are #13 in Power Rank vs #21 (+1.1 vs -1.9 power rating). Key edge: their #4 defense vs the #17 offense. Cardinals start Gardner Minshew instead of Jacoby Brissett (-2 pts by his track record). Risk: Seahawks start Drew Lock instead of Sam Darnold (-2 pts by his track record). Home field adds ~2. 2026 form backs it up (+3.2 vs -7.9 pt diff/G). Model has it closer (4.4) than Vegas (8.5)."
     },
     {
      "date": "2026-11-08",
@@ -277,7 +277,7 @@
      "win": 53,
      "conf": "Toss-up",
      "best": true,
-     "vegas": 71,
+     "vegas": 70,
      "line": "Bears -6",
      "spreadPick": "Buccaneers +6",
      "cover": 62,
@@ -289,29 +289,29 @@
      "fTotal": 45.4,
      "total": 47.5,
      "lean": "Under",
-     "why": "Bears are #6 in Power Rank vs #15 (+4.1 vs +0.3 power rating). Key edge: their #14 defense vs the #25 offense. Home field adds ~2. Caution: +0.8 TO margin/G tends to regress. Model has it closer (1.3) than Vegas (6.0)."
+     "why": "Bears are #6 in Power Rank vs #15 (+4.2 vs +0.4 power rating). Key edge: their #14 defense vs the #25 offense. Home field adds ~2. Caution: +0.8 TO margin/G tends to regress. Model has it closer (1.3) than Vegas (6.0)."
     },
     {
      "date": "2026-11-09",
      "away": "Bills",
      "home": "Vikings",
      "pick": "Bills",
-     "win": 54,
+     "win": 60,
      "conf": "Toss-up",
      "best": false,
-     "vegas": 61,
-     "line": "Bills -3.5",
-     "spreadPick": "Vikings +3.5",
-     "cover": 55,
+     "vegas": 60,
+     "line": "Bills -3",
+     "spreadPick": "Bills -3",
+     "cover": 52,
      "agrees": true,
      "proj": [
-      22.4,
-      20.8
+      22.3,
+      18.6
      ],
      "fTotal": 45.8,
-     "total": 45.5,
+     "total": 43.5,
      "lean": "Over",
-     "why": "Bills are #2 in Power Rank vs #20 (+6.5 vs -1.4 power rating). Key edge: their #17 defense vs the #30 offense. Wins despite playing on the road."
+     "why": "Bills are #2 in Power Rank vs #19 (+6.4 vs -1.4 power rating). Key edge: their #17 defense vs the #31 offense. Vikings start Carson Wentz instead of Kyler Murray (-0 pts by his track record). Wins despite playing on the road."
     }
    ]
   },
