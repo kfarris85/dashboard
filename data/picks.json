@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-08T10:22:55-06:00",
+ "updated": "2026-11-08T11:09:46-06:00",
  "leagues": {
   "nfl": {
    "sheet": "2026 Week 9 Picks — Saturday update (Nov 07)",
@@ -594,8 +594,8 @@
    ]
   },
   "nba": {
-   "sheet": "2026-27 NBA Picks (Nov 7)",
-   "url": "https://docs.google.com/spreadsheets/d/17bGqiX21JMvkh1cYOQDJ7u3xdEn1HQeTrlo1xI655pc/edit?usp=drivesdk&ouid=100088946090688909872",
+   "sheet": "2026-27 NBA Picks (Nov 8 early)",
+   "url": "https://docs.google.com/spreadsheets/d/17qL7GXmxkBJM_Lo0Kzlc2wPTm9-XTzjxrR99GMoWsc4/edit?usp=drivesdk&ouid=100088946090688909872",
    "games": [
     {
      "id": "401909938",
@@ -757,6 +757,29 @@
      "total": 229.5,
      "lean": "Over",
      "why": "SA lineup +6.4 pts; POR team form +0.7; home court +2.1; Tobias Harris (SA) out; Ja Morant (POR) out"
+    },
+    {
+     "id": "401909945",
+     "date": "2026-11-08",
+     "away": "PHI",
+     "home": "CHI",
+     "pick": "PHI",
+     "win": 71,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 78,
+     "line": "PHI -9.5",
+     "spreadPick": "CHI +9.5",
+     "cover": 59,
+     "agrees": true,
+     "proj": [
+      122,
+      115
+     ],
+     "fTotal": 231.1,
+     "total": 237.5,
+     "lean": "Under",
+     "why": "PHI lineup +4.4 pts; PHI team form +4.4; home court +2.1; Nic Claxton (CHI) 50% to play; Norman Powell (CHI) 50% to play"
     }
    ]
   },
