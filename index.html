@@ -182,6 +182,10 @@ a{color:var(--home)}
 .trow.mine .tname b{text-decoration:underline;text-decoration-color:var(--home);text-underline-offset:3px}
 .mypk{font:700 10px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;background:var(--home);color:#fff;border-radius:999px;padding:3px 7px;margin-left:6px;white-space:nowrap}
 .mypk.W{background:var(--good)}.mypk.L{background:var(--bad)}
+.chip.mline{background:var(--panel2);border-style:dashed}
+.chip.mline.ml-big{border-color:var(--accent);background:var(--accent-soft)}
+.mldelta{color:var(--muted);font-weight:500;margin-left:6px;white-space:nowrap}
+.chip.mline.ml-big .mldelta{color:var(--accent)}
 .sweat{font:700 11px/1 var(--f-body);border-radius:999px;padding:4px 9px;white-space:nowrap;border:1px solid}
 .sw-ok{background:var(--good-soft);border-color:var(--good);color:var(--good)}
 .sw-warn{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
@@ -367,7 +371,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-11-fun2';
+const BUILD='2026-11-11-line1';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -613,7 +617,7 @@ function modelHTML(g,p){
   if(!p) return ''; const r=grade(g,p);
   const chip=(t,res)=>`<span class="chip ${res||''}">${esc(t)}${res?`<b>${resText(res,g.state)}</b>`:''}</span>`;
   return `<div class="model"><div class="m-head"><span class="m-tag">Model</span>${p.best?'<span class="star">★ Best pick</span>':''}${p.agrees===false?'<span class="dis">Disagrees with Vegas</span>':''}${p.vegas!=null?`<span class="muted">Vegas ${p.vegas}% on pick</span>`:''}${sweatChip(g,p)}</div>
-  <div class="chips">${chip(`${p.pick} ${p.win}% · ${p.conf}`,r.su)}${p.spreadPick?chip('ATS '+p.spreadPick,r.ats):''}${p.lean&&p.total?chip(`${p.lean} ${p.total}${r.totNow!=null&&g.state==='in'?` (${r.totNow} now)`:''}`,r.tot):''}</div>${moveHTML(g,p)}</div>`;
+  <div class="chips">${chip(`${p.pick} ${p.win}% · ${p.conf}`,r.su)}${p.spreadPick?chip('ATS '+p.spreadPick,r.ats):''}${lineChip(g,p)}${p.lean&&p.total?chip(`${p.lean} ${p.total}${r.totNow!=null&&g.state==='in'?` (${r.totNow} now)`:''}`,r.tot):''}</div>${moveHTML(g,p)}</div>`;
 }
 function wxText(g){
   if(LEAGUES[S.league].wx===false) return '';
@@ -648,7 +652,7 @@ function spark(arr){
 }
 function detail(g,p){
   const L=LEAGUES[S.league]; const s=S.sum[g.id]; const out=[];
-  if(p){ out.push(`<div><h4>Why the model likes it</h4><p class="why">${esc(p.why)}</p>${p.proj?`<p class="muted" style="margin-top:4px">Projected ${esc(g.away.abbr)} ${p.proj[0]} – ${esc(g.home.abbr)} ${p.proj[1]}${p.fTotal?` · Formula total ${p.fTotal} vs market ${p.total}`:''}${p.cover?` · Cover ${p.cover}%`:''}${p.kalshi?` · Kalshi ${p.kalshi}%`:''}</p>`:p.margin!=null?`<p class="muted" style="margin-top:4px">Model margin ${p.margin} · Line ${esc(p.line)} · Formula total ${p.fTotal} vs market ${p.total}</p>`:''}</div>`); }
+  if(p){ out.push(`<div><h4>Why the model likes it</h4><p class="why">${esc(p.why)}</p>${p.proj?`<p class="muted" style="margin-top:4px">Projected ${esc(g.away.abbr)} ${p.proj[0]} – ${esc(g.home.abbr)} ${p.proj[1]}${p.fTotal?` · Formula total ${p.fTotal} vs market ${p.total}`:''}${p.cover?` · Cover ${p.cover}%`:''}${p.kalshi?` · Kalshi ${p.kalshi}%`:''}</p>`:''}${lineDetail(g,p)}${p.proj?'':p.margin!=null?`<p class="muted" style="margin-top:4px">Model margin ${p.margin} · Line ${esc(p.line)} · Formula total ${p.fTotal} vs market ${p.total}</p>`:''}</div>`); }
   if(!s){ out.push('<div class="sk">Loading game detail…</div>'); return `<div class="detail">${out.join('')}</div>`; }
   if(s.wp&&s.wp.length>1) out.push(`<div><h4>Win probability · ${esc(g.home.abbr)} (home)</h4>${spark(s.wp)}</div>`);
   if(s.stats&&s.stats.length===2&&s.stats[0].stats.length){
@@ -1341,6 +1345,61 @@ function streakHTML(rows){
    ${box('\u2605 Best picks run',b.run?`${b.run} ${word(b)}${b.run>1?'es':''}`.replace('wines','wins'):'—',b.sign>0?'hot':b.sign<0?'cold':'','longest '+(b.best||0))}
    ${hot?box(hot[1].hot?'Hottest sport':'Coldest sport',(HLG[hot[0]]||hot[0])+' '+(hot[1].hot?'\u{1F525}':'\u{1F9CA}'),hot[1].hot?'hot':'cold',`${hot[1].w}-${hot[1].l} in 14 days, ${(hot[1].d>0?'+':'')+Math.round(hot[1].d*100)} pts vs season`):''}
   </div>`;
+}
+
+
+/* ---- the model's own line: what the spread would be if the model set it ----
+   Shown next to the real line, never instead of it. Positive margin = home team favored. */
+function modelMargin(g,p){
+  if(!p) return null;
+  if(Array.isArray(p.proj)&&p.proj.length===2&&p.proj[0]!=null&&p.proj[1]!=null){
+    const a=parseFloat(p.proj[0]), h=parseFloat(p.proj[1]);
+    if(!isNaN(a)&&!isNaN(h)) return h-a;
+  }
+  // college football publishes one margin, from the pick's point of view
+  if(p.margin!=null&&!isNaN(p.margin)){ const sd=sideOf(p.pick,g); if(!sd) return null;
+    return sd==='home'?Math.abs(+p.margin):-Math.abs(+p.margin); }
+  return null;
+}
+function parseLine(txt,g){
+  const t=String(txt||'').trim(); if(!t) return null;
+  if(/^(pk|pick|even)$/i.test(t)) return 0;
+  const m=t.match(/^(.*\S)\s+([+-]?\d+(?:\.\d+)?)$/); if(!m) return null;
+  const n=parseFloat(m[2]); if(isNaN(n)) return null;
+  const sd=sideOf(m[1],g); if(!sd) return null;
+  return sd==='home'?-n:n;
+}
+function fmtSpread(M,away,home){
+  const a=Math.abs(M);
+  if(a<0.05) return 'PK';
+  return esc(M>0?home:away)+' -'+a.toFixed(1);
+}
+function modelLine(g,p){
+  const M=modelMargin(g,p); if(M==null) return null;
+  const away=(p&&p.away)||g.away.abbr||g.away.short||'', home=(p&&p.home)||g.home.abbr||g.home.short||'';
+  let mk=parseLine(p&&p.line,g); if(mk==null) mk=parseLine((g.odds||{}).details,g);
+  return {M,market:mk,txt:fmtSpread(M,away,home),mtxt:mk==null?null:fmtSpread(mk,away,home),
+          diff:mk==null?null:M-mk,away,home};
+}
+function lineDetail(g,p){
+  const L=modelLine(g,p); if(!L) return '';
+  let sent;
+  if(L.market==null) sent='No market line to compare it with yet.';
+  else if(Math.abs(L.diff)<0.05) sent='Dead on the market number.';
+  else sent=`That is ${Math.abs(L.diff).toFixed(1)} point${Math.abs(L.diff)<0.95||Math.abs(L.diff)>=1.05?'s':''} more on <b>${esc(L.diff>0?L.home:L.away)}</b> than the market, which has <b>${L.mtxt}</b>.`+(L.M*L.market<0?' The two sides disagree on who should be favored.':'');
+  return `<p class="muted" style="margin-top:4px">Model line: <b>${L.txt}</b>. ${sent} This is the model's own number, not a bet \u2014 against the real spread it has graded about 50%.</p>`;
+}
+function lineChip(g,p){
+  const L=modelLine(g,p); if(!L) return '';
+  let delta='', cls='';
+  if(L.diff!=null){
+    const d=Math.abs(L.diff);
+    delta=d<0.05?'\u00b7 same as the market':`\u00b7 ${d.toFixed(1)} pt${d<0.95||d>=1.05?'s':''} toward ${esc(L.diff>0?L.home:L.away)}`;
+    // highlight only a real disagreement: the model makes the other team the favorite
+    if(L.M*L.market<0) cls='ml-big';
+  }
+  const tip=`If the model set the line it would be ${L.txt.replace(/<[^>]*>/g,'')}.`+(L.mtxt?` The market has ${L.mtxt.replace(/<[^>]*>/g,'')}.`:'');
+  return `<span class="chip mline ${cls}" title="${esc(tip)}">Model line <b>${L.txt}</b>${delta?`<span class="mldelta">${delta}</span>`:''}</span>`;
 }
 
 /* ---- 3. sweat meter ---- */
