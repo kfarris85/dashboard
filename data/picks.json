@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-11T11:45:57-06:00",
+ "updated": "2026-11-11T16:15:00-06:00",
  "leagues": {
   "nfl": {
    "sheet": "2026 Week 10 Picks (Nov 11)",
@@ -321,8 +321,8 @@
    "games": []
   },
   "nba": {
-   "sheet": "2026-27 NBA Picks (Nov 10)",
-   "url": "https://docs.google.com/spreadsheets/d/1qFuQKGtDQez8IbLdsO0bme7GPlxi-REt3MAKMheDX3I/edit?usp=drivesdk&ouid=100088946090688909872",
+   "sheet": "2026-27 NBA Picks (Nov 11)",
+   "url": "https://docs.google.com/spreadsheets/d/1Lr69T_juOcnvC5Dw3jVWHkuaRLkrWSrtfee7-NHU2HE/edit?usp=drivesdk&ouid=100088946090688909872",
    "games": [
     {
      "id": "401909960",
@@ -460,6 +460,236 @@
      "fTotal": 226.5,
      "total": 226.5,
      "why": "OKC lineup +2.3 pts; OKC team form +0.6; home court +2.1; Chet Holmgren (OKC) out; Jalen Williams (OKC) out; Ja Morant (POR) out"
+    },
+    {
+     "id": "401909966",
+     "date": "2026-11-11",
+     "away": "WSH",
+     "home": "IND",
+     "pick": "IND",
+     "win": 67,
+     "conf": "Lean",
+     "best": false,
+     "vegas": 60,
+     "line": "IND -3.5",
+     "spreadPick": "IND -3.5",
+     "cover": 56,
+     "agrees": true,
+     "proj": [
+      112,
+      117
+     ],
+     "fTotal": 228.4,
+     "total": 228.5,
+     "why": "IND lineup +3.4 pts; home court +2.1; Jamir Watkins (WSH) out; Johnny Furphy (IND) out; Tyrese Haliburton (IND) out",
+     "lean": "Under"
+    },
+    {
+     "id": "401909967",
+     "date": "2026-11-11",
+     "away": "CLE",
+     "home": "NY",
+     "pick": "NY",
+     "win": 64,
+     "conf": "Lean",
+     "best": false,
+     "vegas": 63,
+     "line": "NY -4.5",
+     "spreadPick": "CLE +4.5",
+     "cover": 51,
+     "agrees": true,
+     "proj": [
+      109,
+      113
+     ],
+     "fTotal": 222.3,
+     "total": 221.5,
+     "why": "NY lineup +2.3 pts; NY team form +2.1; home court +2.1; NY on back-to-back; Sam Merrill (CLE) out; Karl-Anthony Towns (NY) 50% to play",
+     "lean": "Over"
+    },
+    {
+     "id": "401909968",
+     "date": "2026-11-11",
+     "away": "BOS",
+     "home": "TOR",
+     "pick": "BOS",
+     "win": 66,
+     "conf": "Lean",
+     "best": false,
+     "vegas": 67,
+     "line": "BOS -5.5",
+     "spreadPick": "TOR +5.5",
+     "cover": 52,
+     "agrees": true,
+     "proj": [
+      110,
+      105
+     ],
+     "fTotal": 221.1,
+     "total": 215.5,
+     "why": "BOS lineup +7.9 pts; BOS team form +1.3; home court +2.1; BOS on back-to-back; Devin Carter (BOS) out; Paul George (BOS) out; Scottie Barnes (TOR) out; Kawhi Leonard (TOR) out; Collin Murray-Boyles (TOR) 50% to play; Immanuel Quickley (TOR) 50% to play",
+     "lean": "Over"
+    },
+    {
+     "id": "401909969",
+     "date": "2026-11-11",
+     "away": "SA",
+     "home": "CHI",
+     "pick": "SA",
+     "win": 88,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 89,
+     "line": "SA -15.5",
+     "spreadPick": "CHI +15.5",
+     "cover": 55,
+     "agrees": true,
+     "proj": [
+      126,
+      112
+     ],
+     "fTotal": 235.7,
+     "total": 238.5,
+     "why": "SA lineup +9.3 pts; SA team form +6.8; home court +2.1; Tobias Harris (SA) out; Devin Vassell (SA) 50% to play; Norman Powell (CHI) 50% to play; Caleb Wilson (CHI) 50% to play",
+     "lean": "Under"
+    },
+    {
+     "id": "401909970",
+     "date": "2026-11-11",
+     "away": "DEN",
+     "home": "MEM",
+     "pick": "DEN",
+     "win": 59,
+     "conf": "Toss-up",
+     "best": false,
+     "vegas": 63,
+     "line": "DEN -4.5",
+     "spreadPick": "MEM +4.5",
+     "cover": 56,
+     "agrees": true,
+     "proj": [
+      117,
+      114
+     ],
+     "fTotal": 232.8,
+     "total": 230.5,
+     "why": "DEN lineup +6.2 pts; MEM team form +1.4; home court +2.1",
+     "lean": "Over"
+    },
+    {
+     "id": "401909971",
+     "date": "2026-11-11",
+     "away": "LAL",
+     "home": "MIL",
+     "pick": "LAL",
+     "win": 85,
+     "conf": "Best Pick",
+     "best": true,
+     "vegas": 87,
+     "line": "LAL -14.5",
+     "spreadPick": "MIL +14.5",
+     "cover": 56,
+     "agrees": true,
+     "proj": [
+      121,
+      108
+     ],
+     "fTotal": 231,
+     "total": 229.5,
+     "why": "LAL lineup +5.8 pts; LAL team form +6.9; home court +2.1; MIL on back-to-back; Quentin Grimes (LAL) out; Myles Turner (MIL) out; Tyler Herro (MIL) 50% to play",
+     "lean": "Over"
+    },
+    {
+     "id": "401909972",
+     "date": "2026-11-11",
+     "away": "BKN",
+     "home": "NO",
+     "pick": "NO",
+     "win": 61,
+     "conf": "Lean",
+     "best": false,
+     "vegas": 60,
+     "line": "NO -3.5",
+     "spreadPick": "BKN +3.5",
+     "cover": 50,
+     "agrees": true,
+     "proj": [
+      113,
+      116
+     ],
+     "fTotal": 230.4,
+     "total": 228.5,
+     "why": "NO team form +0.7; home court +2.1; Mikel Brown Jr. (BKN) out; Ben Saraf (BKN) out; Nolan Traore (BKN) 50% to play; Yves Missi (NO) out; Trey Murphy III (NO) 15% to play",
+     "lean": "Over"
+    },
+    {
+     "id": "401909973",
+     "date": "2026-11-11",
+     "away": "ORL",
+     "home": "UTAH",
+     "pick": "ORL",
+     "win": 56,
+     "conf": "Toss-up",
+     "best": false,
+     "vegas": 63,
+     "line": "ORL -4.5",
+     "spreadPick": "UTAH +4.5",
+     "cover": 59,
+     "agrees": true,
+     "proj": [
+      108,
+      106
+     ],
+     "fTotal": 227.7,
+     "total": 214.5,
+     "why": "ORL lineup +3.3 pts; ORL team form +0.5; home court +2.1; Paolo Banchero (ORL) out; Jalen Suggs (ORL) out; Jamal Cain (ORL) 50% to play; Tristan da Silva (ORL) 50% to play; Jaren Jackson Jr. (UTAH) out; Lauri Markkanen (UTAH) out; Jusuf Nurkic (UTAH) out; Keyonte George (UTAH) 50% to play",
+     "lean": "Over"
+    },
+    {
+     "id": "401909974",
+     "date": "2026-11-11",
+     "away": "GS",
+     "home": "HOU",
+     "pick": "HOU",
+     "win": 61,
+     "conf": "Lean",
+     "best": false,
+     "vegas": 70,
+     "line": "HOU -6.5",
+     "spreadPick": "GS +6.5",
+     "cover": 60,
+     "agrees": true,
+     "proj": [
+      108,
+      112
+     ],
+     "fTotal": 225,
+     "total": 219.5,
+     "why": "HOU lineup +1.7 pts; GS team form +0.3; home court +2.1; Jimmy Butler III (GS) out; Moses Moody (GS) out; Kristaps Porzingis (GS) out; Steven Adams (HOU) out",
+     "lean": "Over"
+    },
+    {
+     "id": "401909975",
+     "date": "2026-11-11",
+     "away": "OKC",
+     "home": "POR",
+     "pick": "POR",
+     "win": 57,
+     "conf": "Toss-up",
+     "best": false,
+     "vegas": 58,
+     "line": "POR -2.5",
+     "spreadPick": "OKC +2.5",
+     "cover": 52,
+     "agrees": true,
+     "proj": [
+      111,
+      113
+     ],
+     "fTotal": 224.3,
+     "total": 224.5,
+     "why": "OKC lineup +0.9 pts; POR team form +0.9; home court +2.1; Chet Holmgren (OKC) out; Ajay Mitchell (OKC) out; Jalen Williams (OKC) out; Ja Morant (POR) out",
+     "lean": "Under"
     }
    ]
   },
