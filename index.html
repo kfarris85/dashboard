@@ -297,6 +297,17 @@ a{color:var(--home)}
 .pc-foot{text-align:center;font-size:13px;color:var(--muted)} .pc-foot b{color:var(--ink)}
 .prop .out{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px}
+.pmini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pmc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;display:grid;gap:6px;min-width:0;text-align:left}
+.pmc.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.pmc .nm{font:700 11px var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmc .big{font:700 21px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.pmc .sm{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmc .spark{display:flex;align-items:flex-end;gap:2px;height:30px}
+.pmc .spark i{flex:1;min-width:2px;border-radius:2px 2px 0 0;background:var(--muted);opacity:.45}
+.pmc .spark i.over{background:var(--good);opacity:1} .pmc .spark i.under{background:var(--bad);opacity:1} .pmc .spark i.push{background:var(--warn);opacity:1}
+.pmc input{width:100%;box-sizing:border-box;font:600 13px var(--f-body);color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 6px;text-align:center}
+@media (max-width:560px){ .pmini{gap:5px} .pmc{padding:6px 6px} .pmc .big{font-size:18px} .pmc .nm{font-size:10px;letter-spacing:.04em} .pmc .sm{font-size:10.5px} .pmc .spark{height:24px} }
 .btable td.good{color:var(--good);font-weight:700} .btable td.bad{color:var(--bad);font-weight:700}
 @media (max-width:560px){ .pgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px} }
 .tab.hist-tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
@@ -374,7 +385,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-11-props1';
+const BUILD='2026-11-11-props2';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -403,7 +414,7 @@ const STATES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California
 const WMO={0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Fog',51:'Drizzle',53:'Drizzle',55:'Drizzle',56:'Freezing drizzle',57:'Freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow',80:'Showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Snow showers',95:'Thunderstorms',96:'Thunderstorms',99:'Thunderstorms'};
 
 const store={get(k){try{return localStorage.getItem('mgc_'+k)}catch(e){return null}},set(k,v){try{localStorage.setItem('mgc_'+k,v)}catch(e){}}};
-const S={league:(LEAGUES[store.get('league')]||['hist','stars','mv','slip','props'].includes(store.get('league')))?store.get('league'):'nfl',hLg:'all',hRows:null,hLive:0,hBusy:false,filter:'all',date:null,week:null,seasontype:null,events:[],open:new Set(),sum:{},wx:{},geo:{},err:null,last:null,timer:null,tick:null,next:0,token:0,weekNum:null,props:{lg:null,id:null,name:'',img:'',q:'',stat:null,line:'',find:null,ctx:null,ctxKey:null,busy:false,err:null}};
+const S={league:(LEAGUES[store.get('league')]||['hist','stars','mv','slip','props'].includes(store.get('league')))?store.get('league'):'nfl',hLg:'all',hRows:null,hLive:0,hBusy:false,filter:'all',date:null,week:null,seasontype:null,events:[],open:new Set(),sum:{},wx:{},geo:{},err:null,last:null,timer:null,tick:null,next:0,token:0,weekNum:null,props:{lg:null,id:null,name:'',img:'',q:'',stat:null,lines:{},top:[],find:null,ctx:null,ctxKey:null,busy:false,err:null}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
@@ -1641,7 +1652,7 @@ function renderSlip(){
 
 /* ---- shared click handling for everything above ---- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-my],[data-slip],[data-slipx],[data-slipgo],[data-slipclear],[data-slipreset],[data-recap],[data-jump],[data-pp],[data-ppback],[data-ppgo]');
+  const t=e.target.closest('[data-my],[data-slip],[data-slipx],[data-slipgo],[data-slipclear],[data-slipreset],[data-recap],[data-jump],[data-pp],[data-ppback],[data-ppgo],[data-ppstat]');
   if(!t) return;
   e.stopPropagation();
   if(t.dataset.my){ const [lg,id,side]=t.dataset.my.split('|');
@@ -1658,6 +1669,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.recap){ store.set('recapOff',t.dataset.recap); if(S.league==='stars') renderStars(); else render(); return; }
   if(t.dataset.pp){ const [lg,id,name,img]=t.dataset.pp.split('|'); propOpen({lg,id,name,img}); return; }
   if(t.dataset.ppback){ propBack(); return; }
+  if(t.dataset.ppstat){ S.props.stat=+t.dataset.ppstat; renderProps(); return; }
   if(t.dataset.ppgo){ const v=($('ppq')&&$('ppq').value||'').trim(); if(v.length>=2) propFind(v); return; }
   if(t.dataset.jump){ const id=t.dataset.jump; if(!S.open.has(id)){ S.open.add(id); const g=S.events.find(x=>x.id===id); repaint(id);
       if(g){ const tok=S.token; Promise.all([loadSummary(g),loadWx(g)]).then(()=>tok===S.token&&repaint(id)); } }
@@ -1669,7 +1681,7 @@ function slipTabLabel(){ const n=S.slip.legs.length; return '\u{1F3AB} Slip'+(n?
 let pSeq=0;
 function propRecent(){ try{ return JSON.parse(store.get('props')||'[]')||[]; }catch(e){ return []; } }
 function propRemember(f){ const l=propRecent().filter(x=>!(x.lg===f.lg&&String(x.id)===String(f.id))); l.unshift({lg:f.lg,id:String(f.id),name:f.name,img:f.img||''}); store.set('props',JSON.stringify(l.slice(0,8))); }
-function propOpen(f){ const P=S.props; P.lg=f.lg; P.id=String(f.id); P.name=f.name; P.img=f.img||''; P.ctx=null; P.ctxKey=null; P.stat=null; P.line=''; P.find=null; P.err=null; propRemember(f); loadProps(); }
+function propOpen(f){ const P=S.props; P.lg=f.lg; P.id=String(f.id); P.name=f.name; P.img=f.img||''; P.ctx=null; P.ctxKey=null; P.stat=null; P.lines={}; P.top=[]; P.find=null; P.err=null; propRemember(f); loadProps(); }
 function propBack(){ const P=S.props; P.id=null; P.ctx=null; P.ctxKey=null; P.err=null; P.busy=false; renderProps(); }
 
 async function propFind(q){
@@ -1763,7 +1775,9 @@ async function loadProps(){
     head:val(a,'headshot','href')||P.img||'',inj:(a.injuries||[])[0]||null};
   const num=gl.labels.map((l,i)=>({l,i})).filter(c=>gl.rows.filter(r=>/^-?\d+(\.\d+)?$/.test(String(r.stats[c.i]==null?'':r.stats[c.i]).replace(/,/g,''))).length>=Math.ceil(gl.rows.length*0.6));
   P.ctx.num=num;
+  P.top=propTop(P.lg,P.ctx.pos,num);
   if(P.stat==null||!num.some(c=>c.i===P.stat)) P.stat=(['PTS','YDS','REC','H','K','REB','AST'].map(x=>num.find(c=>c.l===x)).find(Boolean)||num[0]||{i:null}).i;
+  if(P.top.length&&!P.top.some(c=>c.i===P.stat)) P.stat=P.top[0].i;
   renderProps();
 }
 
@@ -1780,6 +1794,36 @@ function propHit(xs,line){
 }
 function propTile(k,big,sub,cls,title){
   return `<div class="tile"${title?` title="${esc(title)}"`:''}><div class="k">${esc(k)}</div><div class="v ${cls||''}" style="font-size:21px">${big}</div>${sub?`<div class="s">${sub}</div>`:''}</div>`;
+}
+
+/* the three stats that matter for this player's sport and position */
+function propTop(lg,pos,num){
+  const p=String(pos||'').toUpperCase(); let want;
+  if(lg==='nba'||lg==='cbb') want=['PTS','REB','AST'];
+  else if(lg==='mlb') want=/PITCH|^P$|^SP$|^RP$/.test(p)?['IP','K','ER']:['H','RBI','HR'];
+  else if(/QUARTERBACK|^QB$/.test(p)) want=['YDS','TD','CMP'];
+  else if(/RUNNING ?BACK|FULLBACK|^RB$|^FB$/.test(p)) want=['YDS','CAR','TD'];
+  else if(/RECEIVER|TIGHT ?END|^WR$|^TE$/.test(p)) want=['REC','YDS','TD'];
+  else if(/KICKER|PUNTER|^PK$|^K$|^P$/.test(p)) want=['FG','PTS','XP'];
+  else if(/BACK|LINEBACKER|SAFETY|CORNER|END|TACKLE|^LB$|^CB$|^S$|^DE$|^DT$/.test(p)) want=['TOT','SOLO','SACK'];
+  else want=['YDS','TD','REC'];
+  const out=[];
+  for(const l of want){ const c=num.find(x=>x.l===l); if(c&&!out.includes(c)) out.push(c); }
+  for(const c of num){ if(out.length>=3) break; if(!out.includes(c)) out.push(c); }
+  return out.slice(0,3);
+}
+function propLineOf(i){ const v=S.props.lines&&S.props.lines[i]; return v==null?'':v; }
+function propMini(col,active){
+  const ln=parseFloat(propLineOf(col.i));
+  const vals=propVals(col.i);
+  const h=propHit(vals,ln), l5=propHit(vals.slice(0,5),ln);
+  const last=vals.slice(0,10).reverse();
+  const mx=Math.max(...last.map(x=>x.v),isNaN(ln)?0:ln,1);
+  const bars=last.map(x=>`<i class="${isNaN(ln)?'':x.v>ln?'over':x.v<ln?'under':'push'}" style="height:${Math.max(10,x.v/mx*100).toFixed(0)}%" title="${esc(x.v)}"></i>`).join('');
+  const big=!h.n?'\u2014':(h.pct==null?h.avg.toFixed(1):pctTxt(h.pct));
+  const cls=h.pct==null?'':h.pct>=.6?'good':h.pct<=.4?'bad':'';
+  const sub=!h.n?'no games':(h.pct==null?`avg \u00b7 L5 ${l5.avg!=null?l5.avg.toFixed(1):'\u2014'}`:`${h.o} of ${h.n} \u00b7 avg ${h.avg.toFixed(1)}`);
+  return `<div class="pmc${active?' on':''}"><button class="pmbtn" type="button" data-ppstat="${col.i}" style="all:unset;cursor:pointer;display:grid;gap:4px"><span class="nm">${esc(col.l)}</span><span class="big ${cls}">${big}</span><span class="sm">${esc(sub)}</span></button><div class="spark">${bars}</div><input type="number" step="0.5" inputmode="decimal" placeholder="line" value="${esc(propLineOf(col.i))}" data-ppml="${col.i}" aria-label="${esc(col.l)} line"></div>`;
 }
 
 function renderProps(){
@@ -1801,7 +1845,7 @@ function renderProps(){
   const c=P.ctx;
   if(!c){ box.innerHTML=`<div class="panel"><p style="margin:0 0 10px">${esc(P.err||'Couldn’t load this player.')}</p><p style="margin:0"><button class="linkbtn" type="button" data-ppback="1">← Another player</button></p></div>`; return; }
   const L=LEAGUES[P.lg];
-  const line=parseFloat(P.line);
+  const line=parseFloat(propLineOf(P.stat));
   const i=P.stat, lab=(c.num.find(x=>x.i===i)||{l:''}).l;
   const vals=propVals(i);
   const og=c.next&&c.next.opp&&c.def?c.def.teams[c.next.opp.id]:null;
@@ -1821,7 +1865,8 @@ function renderProps(){
   if(!c.num.length||i==null){ box.innerHTML=`<div class="panel">${out}<p class="muted">ESPN’s game log for this player has no numeric columns to work a prop against.</p></div>`; return; }
 
   /* controls + chart */
-  out+=`<div class="prop"><div class="row"><select id="ppStat" aria-label="Stat">${c.num.map(x=>`<option value="${x.i}"${x.i===i?' selected':''}>${esc(x.l)}</option>`).join('')}</select><span class="muted">over</span><input id="ppLine" type="number" step="0.5" inputmode="decimal" placeholder="Line" value="${esc(P.line||'')}" aria-label="Prop line"><span class="muted">${esc(c.gl.season||'this season')} · ${vals.length} games</span></div><div id="ppChart"></div></div>`;
+  out+=`<div id="ppTop"></div>`;
+  out+=`<div class="prop"><div class="row"><select id="ppStat" aria-label="Stat">${c.num.map(x=>`<option value="${x.i}"${x.i===i?' selected':''}>${esc(x.l)}</option>`).join('')}</select><span class="muted">over</span><input id="ppLine" type="number" step="0.5" inputmode="decimal" placeholder="Line" value="${esc(propLineOf(i))}" aria-label="Prop line"><span class="muted">${esc(c.gl.season||'this season')} · ${vals.length} games</span></div><div id="ppChart"></div></div>`;
 
   out+=`<div id="ppOut"></div>`;
 
@@ -1842,12 +1887,15 @@ function renderProps(){
 /* repaint only the parts that depend on the stat + line, so typing a line keeps focus */
 function propPaint(){
   const P=S.props, c=P.ctx, host=$('ppOut'); if(!c||!host) return;
-  const line=parseFloat(P.line), i=P.stat;
+  const line=parseFloat(propLineOf(P.stat)), i=P.stat;
   const lab=(c.num.find(x=>x.i===i)||{l:''}).l;
   const vals=propVals(i);
   const og=c.next&&c.next.opp&&c.def?c.def.teams[c.next.opp.id]:null;
   const ogr=og?dGrade(og.rank,c.def.n):null;
   const gradeOf=r=>{const t=c.opp(r); return t?dGrade(t.rank,c.def.n):null;};
+  const act=document.activeElement, actSel=act&&act.tagName==='INPUT'?[act.id,act.dataset.ppml,act.selectionStart]:null;
+  const top=$('ppTop');
+  if(top) top.innerHTML=(P.top&&P.top.length>1)?`<h4 style="margin:4px 0 6px">Key stats${esc(c.pos?' \u00b7 '+c.pos:'')}</h4><div class="pmini">${P.top.map(col=>propMini(col,col.i===i)).join('')}</div>`:'';
   let out='';
   /* splits */
   const sw=vals.reduce((s,x)=>s+c.w(x.r),0)||1;
@@ -1886,11 +1934,13 @@ function propPaint(){
     return `<tr><td>${esc([dt,[r.atVs,r.opp&&r.opp.abbreviation].filter(Boolean).join(' '),[r.res,r.score].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</td><td${t?` title="Allows ${t.pa.toFixed(1)}/game, #${t.rank} of ${c.def.n}"`:''}>${t?`<b class="${'AB'.includes(g)?'good':'DF'.includes(g)?'bad':''}">${g}</b> <span class="muted">#${t.rank}</span>`:'—'}</td>${c.labels.map((l,k)=>`<td${k===i&&mark?` class="${mark}"`:''}>${esc(r.stats[k]==null?'':r.stats[k])}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
     <p class="sub" style="margin:6px 0 0">Defense grade is by points (runs) allowed per game from ESPN standings: A = toughest 20%, F = easiest 20%.</p>`;
   host.innerHTML=out;
+  if(actSel&&actSel[1]!=null){ const el=document.querySelector(`[data-ppml="${actSel[1]}"]`); if(el){ el.focus(); try{ el.setSelectionRange(actSel[2],actSel[2]); }catch(e){} } }
   if(vals.length) propChart({labels:c.labels,rows:c.rows,def:c.def,opp:c.opp,w:c.w},i,vals,line,wavg,lab,'ppChart');
 }
 document.addEventListener('input',e=>{ const t=e.target; if(!t) return;
-  if(t.id==='ppLine'){ S.props.line=t.value; propPaint(); }
-  else if(t.id==='ppStat'){ S.props.stat=+t.value; propPaint(); } });
+  if(t.id==='ppLine'){ S.props.lines[S.props.stat]=t.value; propPaint(); }
+  else if(t.id==='ppStat'){ S.props.stat=+t.value; renderProps(); }
+  else if(t.dataset&&t.dataset.ppml!=null){ S.props.lines[+t.dataset.ppml]=t.value; propPaint(); } });
 document.addEventListener('keydown',e=>{ if(e.target&&e.target.id==='ppq'&&e.key==='Enter'){ const v=e.target.value.trim(); if(v.length>=2){ e.preventDefault(); propFind(v); e.target.blur(); } } });
 
 async function loadStars(){
