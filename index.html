@@ -1150,18 +1150,23 @@ async function loadMV(force){
 }
 function mvTile(x){
   const g=S.mvEv[x.lg+'|'+x.id];
-  const head=st=>`<div class="g-top"><span class="g-tr"><span class="mv-lg">${esc(HLG[x.lg]||x.lg)}</span><span class="status">${esc(st)}</span></span><button class="mvx" type="button" data-mvx="${x.lg}|${x.id}" aria-label="Remove from Multiview">✕</button></div>`;
-  if(!g) return `<article class="game mv-tile">${head('Loading…')}<div class="sk" style="margin:12px">Loading game…</div></article>`;
+  const headLoad=`<div class="g-top"><span class="g-tr"><span class="mv-lg">${esc(HLG[x.lg]||x.lg)}</span><span class="status">Loading…</span></span><button class="mvx" type="button" data-mvx="${x.lg}|${x.id}" aria-label="Remove from Multiview">✕</button></div>`;
+  if(!g) return `<article class="game mv-tile">${headLoad}<div class="sk" style="margin:12px">Loading game…</div></article>`;
+  // Build with the same pieces as card() so Multiview tiles carry the full model/projections/weather/injury readout.
+  // Temporarily swap S.league so findPick/modelHTML read from this pin's league.
+  const savedLg=S.league; S.league=x.lg;
   const p=findPick(g,x.lg); const o=g.odds||{};
   const status=g.state==='pre'?fmtKick(g.date):g.detail;
-  let model='';
-  if(p){ const r=g.state!=='pre'?grade(g,p):{}; const su=r.su?(g.state==='post'?(r.su==='win'?'<b class="res W">W</b>':r.su==='loss'?'<b class="res L">L</b>':'Push'):(r.su==='win'?'<span class="res W">ahead</span>':r.su==='loss'?'<span class="res L">behind</span>':'tied')):'';
-    const ats=r.ats&&p.spreadPick?` · ATS ${esc(p.spreadPick)} ${g.state==='post'?(r.ats==='win'?'✓':r.ats==='loss'?'✗':'P'):(r.ats==='win'?'covering':r.ats==='loss'?'not covering':'push')}`:'';
-    model=`<div class="mvline">${p.best?'<b>★</b>':''}<span>Model: <b>${esc(p.pick)}</b> ${p.win}%</span>${su}<span class="muted">${ats}</span></div>`; }
   const line=[o.details&&o.details!=='EVEN'?'Line '+o.details:o.details,o.overUnder?'O/U '+o.overUnder:''].filter(Boolean).join(' · ');
-  return `<article class="game mv-tile s-${g.state}" data-mvid="${x.id}">${head(status)}
-    <div class="teams">${trow(g.away,g,p)}${trow(g.home,g,p)}</div>${sitHTML(g)}${wpHTML(g)}${model}
-    ${line?`<div class="meta"><span>${esc(line)}</span>${g.tv?`<span>${esc(g.tv)}</span>`:''}</div>`:''}</article>`;
+  const head=`<div class="g-top"><span class="status">${esc(status)}</span><span class="g-tr"><span class="mv-lg">${esc(HLG[x.lg]||x.lg)}</span>${g.tv?`<span class="muted">${esc(g.tv)}</span>`:''}<button class="mvx" type="button" data-mvx="${x.lg}|${x.id}" aria-label="Remove from Multiview">✕</button></span></div>`;
+  const html=`<article class="game mv-tile s-${g.state}" data-mvid="${x.id}">
+    ${head}
+    <div class="teams">${trow(g.away,g,p)}${trow(g.home,g,p)}</div>
+    ${sitHTML(g)}${wpHTML(g)}${modelHTML(g,p)}
+    <div class="meta">${line?`<span>${esc(line)}</span>`:''}${wxText(g)}${injCount(g)}</div>
+  </article>`;
+  S.league=savedLg;
+  return html;
 }
 function renderMV(){
   const el=$('hist');
