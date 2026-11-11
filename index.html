@@ -190,6 +190,26 @@ a{color:var(--home)}
 .mv.good{color:var(--good);border-color:var(--good);background:var(--good-soft)} .mv.bad{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
 .star-row{display:grid;gap:8px}
 .star-row.s-in{border-color:var(--live)}
+/* ★ Today redesign (Nov 11, 2026) */
+.stars-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 0 6px}
+@media (max-width:560px){ .stars-sum{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px} }
+.stars-intro{display:grid;gap:4px;padding:4px 2px 10px}
+.stars-intro .sub{font-size:13px}
+.day-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:18px 2px 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.day-head .day-name{font:700 16px/1.1 var(--f-display);letter-spacing:.02em;color:var(--ink)}
+.day-head .day-meta{font:600 12px/1 var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stars-games{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px;padding-bottom:4px;align-items:start}
+.star-stub{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-width:0;display:grid;gap:0}
+.star-stub .teams{padding:6px 10px}
+.star-stub .trow{display:flex;gap:10px;align-items:center;padding:6px 0}
+.star-stub .logo-ph{width:28px;height:28px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);flex:none}
+.star-stub .tname{flex:1;min-width:0;display:flex;align-items:baseline;gap:6px}
+.star-stub .tname b{font:700 15px var(--f-display)}
+.star-stub .model{padding:8px 10px;border-top:1px solid var(--line);display:grid;gap:6px}
+.star-stub .chips{display:flex;gap:6px;flex-wrap:wrap}
+.star-stub .chip.pick{background:var(--accent-soft,var(--panel2));border-color:var(--accent,var(--line));color:var(--ink);font-weight:700}
+.star-stub .why{margin:2px 0 0;font:400 13px/1.35 var(--f-body);color:var(--muted)}
+.star-stub .meta{padding:6px 10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 .prop{display:grid;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .prop .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .prop select,.prop input{font:600 15px var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
@@ -1176,16 +1196,69 @@ function renderStars(){
     const ev=Object.values(S.stEv||{}).find(e=>e&&(p.id?e.id===p.id:(teamIs(p.away,e.away)&&teamIs(p.home,e.home))));
     const when=ev?ev.date:new Date(p.date+'T12:00:00'); return {lg,p,ev,when};
   }).sort((a,b)=>a.when-b.when);
-  const body=rows.map(({lg,p,ev})=>{
-    let status=new Date(p.date+'T12:00:00').toLocaleDateString([], {weekday:'short',month:'numeric',day:'numeric'}), res='', score='';
-    if(ev){ status=ev.state==='pre'?fmtKick(ev.date):ev.detail; if(ev.state!=='pre'){ score=`${esc(ev.away.abbr)} ${esc(ev.away.score)} – ${esc(ev.home.abbr)} ${esc(ev.home.score)}`; const r=grade(ev,p); if(r.su) res=ev.state==='post'?(r.su==='win'?'W':'L'):(r.su==='win'?'ahead':'behind'); } }
-    const mv=ev?moveHTML(ev,p):'';
-    return `<div class="panel star-row ${ev&&ev.state==='in'?'s-in':''}"><div class="m-head"><span class="m-tag">${HLG[lg]}</span><span class="status">${esc(status)}</span>${res?`<span class="res ${res==='W'||res==='ahead'?'W':'L'}">${esc(res)}</span>`:''}</div>
-      <div><b style="font:700 19px var(--f-display)">${esc(p.away)} @ ${esc(p.home)}</b>${score?` <span class="muted">· ${score}</span>`:''}</div>
-      <div class="chips"><span class="chip">${esc(p.pick)} ${p.win}%</span>${p.line?`<span class="chip">Line ${esc(p.line)}</span>`:''}${p.spreadPick?`<span class="chip">ATS ${esc(p.spreadPick)}</span>`:''}${p.vegas!=null?`<span class="chip">Vegas ${p.vegas}%</span>`:''}</div>${mv}
-      ${p.why?`<p class="sub" style="margin:0">${esc(p.why)}</p>`:''}</div>`;
-  }).join('');
-  el.innerHTML=`<div style="padding-top:14px" class="sub">★ Best Picks from today through the next 3 days, all sports, in kickoff order. ${S.stBusy?'Loading live scores…':''}</div>${body||'<div class="empty">No ★ Best Picks in the next 3 days yet. They appear as soon as a model run publishes them.</div>'}`;
+
+  // Top-of-page summary: count, live, SU/ATS records on finished ★ picks
+  let liveCount=0, bestFinished=0, bestWon=0, atsDone=0, atsWon=0;
+  for(const {p,ev} of rows){
+    if(!ev) continue;
+    if(ev.state==='in') liveCount++;
+    else if(ev.state==='post'){
+      const r=grade(ev,p);
+      if(r.su==='win'||r.su==='loss'){bestFinished++; if(r.su==='win') bestWon++;}
+      if(r.ats==='win'||r.ats==='loss'){atsDone++; if(r.ats==='win') atsWon++;}
+    }
+  }
+  const tiles=`<div class="summary stars-sum">
+    <div class="tile"><div class="k">★ Best picks</div><div class="v">${rows.length}</div><div class="s">next 3 days</div></div>
+    <div class="tile"><div class="k">Live now</div><div class="v">${liveCount||'—'}</div><div class="s">${liveCount?'tap a card for detail':'nothing live'}</div></div>
+    <div class="tile"><div class="k">Finished · SU</div><div class="v">${bestFinished?bestWon+'–'+(bestFinished-bestWon):'—'}</div><div class="s">★ picks graded</div></div>
+    <div class="tile"><div class="k">Finished · ATS</div><div class="v">${atsDone?atsWon+'–'+(atsDone-atsWon):'—'}</div><div class="s">against the spread</div></div>
+  </div>`;
+
+  // Group by calendar day
+  const dayKey=(d)=>ymd(d);
+  const todayKey=ymd(new Date()); const tomKey=ymd(new Date(Date.now()+864e5));
+  const byDay=new Map();
+  for(const r of rows){ const k=dayKey(r.when); if(!byDay.has(k)) byDay.set(k,[]); byDay.get(k).push(r); }
+  const dayLabel=(k)=>{ if(k===todayKey) return 'Today'; if(k===tomKey) return 'Tomorrow'; const d=parseYmd(k); return d.toLocaleDateString([], {weekday:'long',month:'short',day:'numeric'}); };
+
+  // Reuse the full game card() renderer league tabs use, by briefly swapping S.league per card
+  const savedLg=S.league; let body='';
+  const sortedKeys=[...byDay.keys()].sort();
+  for(const k of sortedKeys){
+    const items=byDay.get(k);
+    const liveHere=items.filter(x=>x.ev&&x.ev.state==='in').length;
+    body+=`<div class="day-head"><span class="day-name">${dayLabel(k)}</span><span class="day-meta">${items.length} ★${liveHere?` · ${liveHere} live`:''}</span></div><div class="games stars-games">`;
+    for(const {lg,p,ev} of items){
+      if(ev){ S.league=lg; body+=card(ev); }
+      else{
+        // Pick exists but ESPN event isn't posted yet — simple placeholder in the same card frame
+        const kick=new Date(p.date+'T12:00:00').toLocaleDateString([], {weekday:'short',month:'numeric',day:'numeric'});
+        body+=`<article class="game s-pre star-stub">
+          <div class="g-top"><span class="status">${esc(kick)}</span><span class="g-tr"><span class="m-tag">${HLG[lg]||lg.toUpperCase()}</span></span></div>
+          <div class="teams">
+            <div class="trow"><span class="logo-ph"></span><div class="tname"><b>${esc(p.away)}</b></div><div class="score"></div></div>
+            <div class="trow"><span class="logo-ph"></span><div class="tname"><b>${esc(p.home)}</b></div><div class="score"></div></div>
+          </div>
+          <div class="model">
+            <div class="chips">
+              <span class="chip pick">★ ${esc(p.pick)} <b>${p.win}%</b></span>
+              ${p.vegas!=null?`<span class="chip">Vegas ${p.vegas}%</span>`:''}
+              ${p.line?`<span class="chip">Line ${esc(p.line)}</span>`:''}
+              ${p.spreadPick?`<span class="chip">ATS ${esc(p.spreadPick)}</span>`:''}
+            </div>
+            ${p.why?`<p class="why">${esc(p.why)}</p>`:''}
+          </div>
+          <div class="meta"><span class="muted">Scoreboard + odds load once ESPN posts the game</span></div>
+        </article>`;
+      }
+    }
+    body+=`</div>`;
+  }
+  S.league=savedLg;
+
+  const intro=`<div class="stars-intro"><div class="sub">Every ★ Best Pick from today through the next 3 days, across all your sports, grouped by day and ordered by tip. Tap any card for the same detail you see on the league tabs.</div>${S.stBusy?'<div class="sub muted">Loading live scores…</div>':''}</div>`;
+  el.innerHTML=tiles+intro+(rows.length?body:'<div class="empty">No ★ Best Picks in the next 3 days yet. They appear as soon as a model run publishes them.</div>');
 }
 
 loadData().then(()=>{ render(); openView(); });
