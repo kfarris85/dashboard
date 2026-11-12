@@ -194,6 +194,10 @@ def main():
                 ev = match_event(events_for(mlg, nd), away_name, home_name)
             except Exception:
                 pass
+        if not ev:
+            print(f'DEBUG no match {mlg} {date}: want away={away_name!r} home={home_name!r} '
+                  f'names={[ (e.get("awayTeamName"), e.get("homeTeamName")) for e in evlist ]}',
+                  file=sys.stderr)
         if ev:
             eid = ev.get('eventId')
             rec.update(eventId=eid, matched=True)
