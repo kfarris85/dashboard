@@ -298,6 +298,15 @@ a{color:var(--home)}
 .prop .out{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px}
 .pmini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.slipadd{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 0;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{font:700 12px var(--f-body);padding:6px 12px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--panel)}
+.slipadd input{width:78px;box-sizing:border-box;font:600 13px var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 7px;text-align:center}
+.conf{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:8px;border:1px solid var(--line);margin-top:6px;font-size:12.5px;line-height:1.35}
+.conf.hard{border-color:var(--bad)} .conf.soft{border-color:var(--warn)}
+.conf .ct{display:block}
+.leg input.legodds{width:62px;box-sizing:border-box;font:600 12px var(--f-body);color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:3px 5px;text-align:center}
 .pmc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;display:grid;gap:6px;min-width:0;text-align:left}
 .pmc.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .pmc .nm{font:700 11px var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -386,7 +395,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-11-dsplit3';
+const BUILD='2026-11-12-slip1';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -1568,8 +1577,18 @@ S.slip=(()=>{const d={bank:SLIP_START,legs:[],open:[],done:[]};
 S.slipEv={}; if(!S.stEv) S.stEv={}; if(!S.mvEv) S.mvEv={};
 function slipSave(){ store.set('slip',JSON.stringify(S.slip)); }
 function slipHas(lg,id){ return S.slip.legs.some(l=>l.lg===lg&&l.id===id); }
+function slipHasLeg(lg,id){ return slipHas(lg,id); }
+function propLegId(P,lab,dir){ return 'p:'+P.id+':'+lab+':'+dir; }
+/* a price the book is actually offering, typed in American form */
+function americanDec(txt){
+  const v=parseFloat(String(txt==null?'':txt).replace(/[^0-9+\-.]/g,''));
+  if(isNaN(v)||v===0||Math.abs(v)<100) return null;
+  return v>0?1+v/100:1+100/(-v);
+}
 const clampP=v=>Math.max(.02,Math.min(.97,v));   /* no 1-in-500 legs: books cut them off too */
 function legDec(l){
+  const book=americanDec(l.odds);
+  if(book) return book;              // his book's real number, vig included
   const raw=(l.vegas!=null&&!isNaN(l.vegas))?l.vegas/100:(l.win!=null?l.win/100:null);
   if(raw==null||raw<=0) return null;
   return 1/Math.min(.96,clampP(raw)*(1+HOLD));
@@ -1619,7 +1638,8 @@ function slipSettle(){
   for(const b of S.slip.open.slice()){
     let allDone=true, lost=false;
     for(const l of b.legs){
-      if(!l.res){
+      if(!l.res&&l.kind==='prop'){ if(settlePropLeg(l)) changed=true; }
+      if(!l.res&&l.kind!=='prop'){
         const g=S.slipEv[l.lg+'|'+l.id];
         if(g&&g.state==='post'){
           const hs=parseFloat(g.home.score), as=parseFloat(g.away.score);
@@ -1646,12 +1666,103 @@ function slipSettle(){
   if(changed) slipSave();
   return changed;
 }
+S.plog=S.plog||{};
+function plogKey(l){ return l.lg+'|'+l.pid; }
+/* pull each prop player's game log once: it settles the leg and lets two props on
+   the same player be judged on how often they have actually landed together */
+async function loadPropLogs(legs){
+  const need=[...new Set(legs.filter(l=>l.kind==='prop'&&l.pid).map(plogKey))].filter(k=>!S.plog[k]);
+  await Promise.all(need.map(async k=>{
+    const [lg,pid]=k.split('|'); const L=LEAGUES[lg]; if(!L) return;
+    const [sport,league]=L.path.split('/');
+    try{ const d=await getJSON(WEBAPI+'common/v3/sports/'+sport+'/'+league+'/athletes/'+pid+'/gamelog',16000);
+      const g=parseGameLog(d); if(g&&g.rows.length) S.plog[k]=g;
+    }catch(e){}
+  }));
+}
+function legStatVal(l,row,labels){
+  const i=labels.indexOf(l.stat); if(i<0) return null;
+  const v=parseFloat(String(row.stats[i]==null?'':row.stats[i]).replace(/,/g,''));
+  return isNaN(v)?null:v;
+}
+function settlePropLeg(l){
+  if(l.res||l.kind!=='prop') return false;
+  const g=S.plog[plogKey(l)]; if(!g) return false;
+  const row=g.rows.find(r=>String(r.id)===String(l.gid)); if(!row) return false;
+  const v=legStatVal(l,row,g.labels); if(v==null) return false;
+  l.actual=v;
+  l.res=v===l.line?'P':((v>l.line)===(l.dir==='over')?'W':'L');
+  l.final=l.stat+' '+v+(row.opp?' vs '+(row.opp.abbreviation||''):'');
+  return true;
+}
+/* how often two props on the same player have landed in the SAME game */
+function jointRate(a,b){
+  if(a.kind!=='prop'||b.kind!=='prop'||a.pid!==b.pid) return null;
+  const g=S.plog[plogKey(a)]; if(!g) return null;
+  const hit=(l,row)=>{ const v=legStatVal(l,row,g.labels); if(v==null||v===l.line) return null;
+    return (v>l.line)===(l.dir==='over'); };
+  let n=0,both=0,pa=0,pb=0;
+  for(const r of g.rows){ const x=hit(a,r), y=hit(b,r); if(x==null||y==null) continue;
+    n++; if(x) pa++; if(y) pb++; if(x&&y) both++; }
+  if(n<4) return null;
+  const indep=(pa/n)*(pb/n);
+  return {n,both,joint:both/n,indep,lift:indep>0?(both/n)/indep:null};
+}
+function gameKeyOf(l){ return l.kind==='prop'?(l.gid?l.lg+'|'+l.gid:null):l.lg+'|'+l.id; }
+function slipConflicts(legs){
+  const out=[];
+  const add=(sev,t,d)=>out.push({sev,t,d});
+  for(let i=0;i<legs.length;i++) for(let j=i+1;j<legs.length;j++){
+    const a=legs[i],b=legs[j];
+    if(a.kind==='prop'&&b.kind==='prop'&&a.pid===b.pid&&a.stat===b.stat){
+      if(a.dir!==b.dir) add('hard','Both sides of the same prop',`${a.player} ${a.stat} over and under are both on. They cannot both land \u2014 this slip can never win.`);
+      else add('hard','The same prop twice',`${a.player} ${a.stat} ${a.dir} ${a.line} is on here twice.`);
+      continue;
+    }
+    if(a.kind!=='prop'&&b.kind!=='prop'&&a.lg===b.lg&&a.id===b.id){
+      add('hard','Both sides of one game',`${a.pick} and ${b.pick} are the same game. One of them has to lose.`);
+      continue;
+    }
+    if(a.kind==='prop'&&b.kind==='prop'&&a.pid===b.pid){
+      const jr=jointRate(a,b);
+      add('soft','Two props on the same player',
+        `${a.player}: ${a.stat} and ${b.stat}. These move together, so multiplying their odds is wrong.`+
+        (jr?` In his log both landed in <b>${jr.both} of ${jr.n}</b> games (${(jr.joint*100).toFixed(0)}%), against ${(jr.indep*100).toFixed(0)}% if they were independent \u2014 ${jr.lift>1.1?'better':jr.lift<0.9?'worse':'about the same as'} than the parlay math assumes.`:' Not enough shared games in his log to measure it.'));
+      continue;
+    }
+    const ka=gameKeyOf(a), kb=gameKeyOf(b);
+    if(ka&&kb&&ka===kb){
+      // a prop and that game's side, or two props from one game
+      const sideLeg=a.kind!=='prop'?a:(b.kind!=='prop'?b:null), pl=a.kind==='prop'?a:b;
+      if(sideLeg&&pl.at&&pl.opp){
+        const backingOpp=(sideLeg.pick||'').toUpperCase().includes(String(pl.opp).toUpperCase());
+        if(backingOpp&&pl.dir==='over')
+          add('soft','Pulling against yourself',`You have ${pl.player} over ${pl.line} ${pl.stat} and ${sideLeg.pick} in the same game. Players usually go over when their own side is doing well, so these two fight each other.`);
+        else add('soft','Same game as another leg',`${pl.pick} and ${sideLeg.pick} are the same game, so they rise and fall together. The combined odds below assume they do not.`);
+      } else {
+        add('soft','Two legs from one game',`${a.pick} and ${b.pick} come from the same game. Books price these as a same-game parlay for a reason \u2014 the straight multiplication below overstates how long the price should be.`);
+      }
+    }
+  }
+  // many legs, one game
+  const byGame={};
+  legs.forEach(l=>{const k=gameKeyOf(l); if(k) byGame[k]=(byGame[k]||0)+1;});
+  const worst=Object.entries(byGame).sort((a,b)=>b[1]-a[1])[0];
+  if(worst&&worst[1]>=3) add('soft','Three or more legs in one game',`${worst[1]} of your ${legs.length} legs are the same game. Treat the combined number as a rough ceiling, not a price.`);
+  if(legs.filter(l=>l.kind==='prop'&&!americanDec(l.odds)).length)
+    add('soft','Some props have no book price',`Props without odds typed in are priced off the model\u2019s own number, so their edge shows as zero. Put your book\u2019s price in to see whether there is anything there.`);
+  const seen=new Set(), dedup=[];
+  for(const c of out){ const k=c.sev+'|'+c.t+'|'+c.d; if(!seen.has(k)){ seen.add(k); dedup.push(c); } }
+  return dedup.sort((a,b)=>(a.sev==='hard'?0:1)-(b.sev==='hard'?0:1));
+}
+
 async function loadSlip(){
   if(S.slipFlight) return; S.slipFlight=true;
   renderSlip();
-  const need=[];
-  for(const b of S.slip.open) for(const l of b.legs) if(!l.res) need.push(l.lg+'|'+l.d);
-  for(const l of S.slip.legs) need.push(l.lg+'|'+l.d);
+  const need=[], props=[];
+  for(const b of S.slip.open) for(const l of b.legs){ if(l.kind==='prop') props.push(l); else if(!l.res) need.push(l.lg+'|'+l.d); }
+  for(const l of S.slip.legs){ if(l.kind==='prop') props.push(l); else need.push(l.lg+'|'+l.d); }
+  await loadPropLogs(props);
   await Promise.all([...new Set(need)].map(async k=>{
     const [lg,d]=k.split('|'); const L=LEAGUES[lg]; if(!L) return;
     const q=new URLSearchParams(L.params||{}); q.set('dates',d.replace(/-/g,''));
@@ -1672,11 +1783,18 @@ function renderSlip(){
   const edge=(modelP!=null&&mktP!=null)?(modelP/mktP-1):null;
   const stake=S.slipStake!=null?S.slipStake:Math.min(50,Math.max(1,Math.floor(sl.bank)));
   const legHTML=sl.legs.map((l,i)=>{
-    const d=decs[i];
-    return `<div class="leg"><span><span class="lp">${esc(l.pick)}</span> <span class="muted">${esc(l.away)} @ ${esc(l.home)} \u00b7 ${esc(HLG[l.lg]||l.lg)}${l.src==='you'?' \u00b7 your pick':''}</span></span>
-      <span class="lo">${l.win!=null?l.win+'% \u00b7 ':''}${amer(d)}</span>
-      <button class="mvx" type="button" data-slipx="${l.lg}|${l.id}" aria-label="Remove leg">\u2715</button></div>`;
+    const d=decs[i], book=americanDec(l.odds);
+    const mp=legModelP(l), ed=(mp!=null&&d)?(mp-1/d):null;
+    const where=l.kind==='prop'
+      ? `${esc(l.at||'')} ${esc(l.opp||'')} \u00b7 ${esc(HLG[l.lg]||l.lg)}${l.n?` \u00b7 ${l.hits} of ${l.n} in his log`:''}`
+      : `${esc(l.away)} @ ${esc(l.home)} \u00b7 ${esc(HLG[l.lg]||l.lg)}${l.src==='you'?' \u00b7 your pick':''}`;
+    return `<div class="leg"><span><span class="lp">${esc(l.pick)}</span> <span class="muted">${where}</span></span>
+      <span class="lo">${l.win!=null?l.win+'% \u00b7 ':''}${amer(d)}${ed!=null?` \u00b7 <b class="${ed>0?'good':'bad'}">${ed>0?'+':''}${(ed*100).toFixed(1)}%</b>`:''}${book?'':'<span class="muted"> est</span>'}</span>
+      <input class="legodds" type="text" data-legodds="${i}" value="${esc(l.odds||'')}" placeholder="odds" aria-label="Book odds for ${esc(l.pick)}">
+      <button class="mvx" type="button" data-slipx="${esc(l.lg)}|${esc(l.id)}" aria-label="Remove leg">\u2715</button></div>`;
   }).join('');
+  const conflicts=slipConflicts(sl.legs);
+  const blocked=conflicts.some(c=>c.sev==='hard');
   const betHTML=(b,open)=>{
     const dd=b.legs.filter(l=>!l.res||l.res!=='P').reduce((a,l)=>a*(l.dec||1),1);
     return `<div class="bet ${b.settled?(b.won?'won':'lost'):''}">
@@ -1688,10 +1806,10 @@ function renderSlip(){
   el.innerHTML=`<div class="slip-wrap">
     <div class="panel"><h3>Play-money bankroll</h3>
       <div class="slip-bank"><span class="b">${money(sl.bank)}</span><span class="muted">started at ${money(SLIP_START)}${sl.done.length?` \u00b7 ${sl.done.length} settled \u00b7 ${roi>=0?'+':''}${money(roi)} all time`:''}</span></div>
-      <p class="sub" style="margin-top:8px">Pretend money, for fun. Your models show no edge against the spread, so treat this as a toy. Payouts use the vig-free Vegas win % with a 2.5% book margin added per leg.</p>
+      <p class="sub" style="margin-top:8px">Pretend money, for fun. Your models show no edge against the spread, so treat this as a toy. A leg with your book\u2019s odds typed in is priced at that number; the rest fall back to the vig-free Vegas win % with a 2.5% margin added.</p>
     </div>
     <div class="panel"><h3>Current slip${sl.legs.length?` \u00b7 ${sl.legs.length} leg${sl.legs.length>1?'s':''}`:''}</h3>
-      ${sl.legs.length?legHTML:'<p class="sub">Empty. Tap <b>+ Slip</b> on any upcoming game card to add it. It uses your own pick when you have made one, otherwise the model\u2019s.</p>'}
+      ${sl.legs.length?legHTML:'<p class="sub">Empty. Tap <b>+ Slip</b> on any upcoming game card, or set a line on the <b>Props</b> tab and add a player over or under. Game legs use your own pick when you have made one, otherwise the model\u2019s. Type your book\u2019s odds next to any leg to price it properly.</p>'}
       ${sl.legs.length?`<div class="slip-sum">
         <div><div class="k">Payout odds</div><div class="v">${amer(dec)}</div></div>
         <div><div class="k">Market chance</div><div class="v">${mktP!=null?(mktP*100).toFixed(1)+'%':'\u2014'}</div></div>
@@ -1699,8 +1817,9 @@ function renderSlip(){
         <div><div class="k">Model vs market</div><div class="v ${edge!=null?(edge>0?'good':'bad'):''}">${edge!=null?((edge>0?'+':'')+(Math.abs(edge)>9?'900':(edge*100).toFixed(0))+'%'):'\u2014'}</div></div>
       </div>
       ${Math.abs(edge||0)>1?'<p class="sub" style="margin:8px 0 0">That gap is huge because a leg is a long shot. Long shots are where model and market disagree most, and where the model has been least reliable \u2014 read it as noise, not a signal.</p>':''}
+      ${conflicts.length?`<h4 style="margin:12px 0 2px">What to watch</h4>${conflicts.map(c=>`<div class="conf ${c.sev}"><span>${c.sev==='hard'?'\u26d4':'\u26a0\ufe0f'}</span><span><b class="ct">${esc(c.t)}</b>${c.d}</span></div>`).join('')}`:(sl.legs.length>1?'<p class="sub" style="margin:10px 0 0">No conflicts: every leg is a different game, so multiplying the odds is fair here.</p>':'')}
       <div class="slip-go"><input id="stake" type="number" min="1" step="1" value="${stake}" aria-label="Stake">
-        <button class="btn" type="button" data-slipgo="1"${ok&&sl.bank>=1?'':' disabled'}>Place ${money(stake)}</button>
+        <button class="btn" type="button" data-slipgo="1"${ok&&sl.bank>=1&&!blocked?'':' disabled'}>Place ${money(stake)}</button>
         <span class="muted">to win ${dec?money(Math.round(stake*dec*100)/100-stake):'\u2014'}</span>
         <button class="btn ghost" type="button" data-slipclear="1">Clear</button></div>`:''}
     </div>
@@ -1708,13 +1827,15 @@ function renderSlip(){
     ${sl.done.length?`<div class="panel"><h3>Settled</h3><div style="display:flex;flex-direction:column;gap:8px">${sl.done.slice(0,10).map(b=>betHTML(b,false)).join('')}</div>
       <div style="margin-top:10px"><button class="btn ghost" type="button" data-slipreset="1">Reset bankroll</button></div></div>`:''}
   </div>`;
+  if(S.slipFocus!=null){ const n=document.querySelector(`[data-legodds="${S.slipFocus}"]`);
+    if(n){ n.focus(); try{ n.setSelectionRange(n.value.length,n.value.length); }catch(e){} } }
   const si=document.getElementById('stake');
   if(si) si.oninput=()=>{ S.slipStake=Math.max(1,Math.round(+si.value||0)); renderSlip(); const n=document.getElementById('stake'); if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length);} };
 }
 
 /* ---- shared click handling for everything above ---- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-my],[data-slip],[data-slipx],[data-slipgo],[data-slipclear],[data-slipreset],[data-recap],[data-jump],[data-pp],[data-ppback],[data-ppgo],[data-ppstat]');
+  const t=e.target.closest('[data-my],[data-slip],[data-slipx],[data-slipgo],[data-slipclear],[data-slipreset],[data-recap],[data-jump],[data-pp],[data-ppback],[data-ppgo],[data-ppstat],[data-ppdir],[data-ppslip]');
   if(!t) return;
   e.stopPropagation();
   if(t.dataset.my){ const [lg,id,side]=t.dataset.my.split('|');
@@ -1731,7 +1852,10 @@ document.addEventListener('click',e=>{
   if(t.dataset.recap){ store.set('recapOff',t.dataset.recap); if(S.league==='stars') renderStars(); else render(); return; }
   if(t.dataset.pp){ const [lg,id,name,img]=t.dataset.pp.split('|'); propOpen({lg,id,name,img}); return; }
   if(t.dataset.ppback){ propBack(); return; }
-  if(t.dataset.ppstat){ S.props.stat=+t.dataset.ppstat; renderProps(); return; }
+  if(t.dataset.ppstat){ S.props.stat=+t.dataset.ppstat; S.props.odds=''; renderProps(); return; }
+  if(t.dataset.ppdir){ S.props.dir=t.dataset.ppdir; propPaint(); return; }
+  if(t.dataset.ppslip){ propSlipToggle(); propPaint();
+    const tb=$('tabs').querySelector('[data-l="slip"]'); if(tb) tb.innerHTML=slipTabLabel(); return; }
   if(t.dataset.ppgo){ const v=($('ppq')&&$('ppq').value||'').trim(); if(v.length>=2) propFind(v); return; }
   if(t.dataset.jump){ const id=t.dataset.jump; if(!S.open.has(id)){ S.open.add(id); const g=S.events.find(x=>x.id===id); repaint(id);
       if(g){ const tok=S.token; Promise.all([loadSummary(g),loadWx(g)]).then(()=>tok===S.token&&repaint(id)); } }
@@ -1855,6 +1979,30 @@ function propHit(xs,line){
   const o=xs.filter(x=>x.v>line).length, u=xs.filter(x=>x.v<line).length;
   return {n,o,u,p:n-o-u,pct:o/n,avg};
 }
+/* chance this player goes over (or under) a line.
+   Two readings: how often he has actually done it, and a normal curve around his
+   opponent-weighted average using his own game-to-game spread. Blended, because a
+   10-game hit rate alone is jumpy and a normal curve alone ignores his real shape. */
+function normCdf(z){ const t=1/(1+0.2316419*Math.abs(z));
+  const d=0.3989423*Math.exp(-z*z/2);
+  let pr=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));
+  return z>0?1-pr:pr; }
+function propProb(vals,line,dir,wfn){
+  const n=vals.length; if(!n||isNaN(line)) return null;
+  const over=vals.filter(x=>x.v>line).length, push=vals.filter(x=>x.v===line).length;
+  const dec=n-over-push;
+  const hit=(n-push)>0?over/(n-push):null;          // observed, pushes removed
+  const sw=wfn?vals.reduce((s,x)=>s+wfn(x.r),0):n;
+  const mu=wfn?vals.reduce((s,x)=>s+wfn(x.r)*x.v,0)/sw:vals.reduce((s,x)=>s+x.v,0)/n;
+  const m0=vals.reduce((s,x)=>s+x.v,0)/n;
+  const sd=Math.sqrt(vals.reduce((s,x)=>s+(x.v-m0)*(x.v-m0),0)/Math.max(1,n-1))||1;
+  const curve=1-normCdf((line-mu)/sd);
+  // the hit rate earns its weight as the sample grows; at 10 games it is about half
+  const w=Math.min(0.6,n/20);
+  let p=hit!=null?(w*hit+(1-w)*curve):curve;
+  if(dir==='under') p=1-p;
+  return {p:clampP(p),n,over,push,hit:hit==null?null:(dir==='under'?1-hit:hit),curve:dir==='under'?1-curve:curve,mu,sd};
+}
 function propTile(k,big,sub,cls,title){
   return `<div class="tile"${title?` title="${esc(title)}"`:''}><div class="k">${esc(k)}</div><div class="v ${cls||''}" style="font-size:21px">${big}</div>${sub?`<div class="s">${sub}</div>`:''}</div>`;
 }
@@ -1904,6 +2052,25 @@ function propMini(col,active){
 function gradeFor(t,label){
   const P=S.props, c=P.ctx; if(!t||!c) return null;
   return statGrade(P.lg,t,c.pos,label)||dGradeT(t,c.def);
+}
+
+function propSlipToggle(){
+  const P=S.props, c=P.ctx; if(!c||!c.next) return;
+  const i=P.stat, lab=(c.num.find(x=>x.i===i)||{l:''}).l;
+  const line=parseFloat(propLineOf(i)); if(isNaN(line)) return;
+  const dir=P.dir||'over', id=propLegId(P,lab,dir);
+  if(slipHas(P.lg,id)){ S.slip.legs=S.slip.legs.filter(l=>!(l.lg===P.lg&&l.id===id)); slipSave(); return; }
+  if(S.slip.legs.length>=10) return;
+  const pr=propProb(propVals(i),line,dir,c.w); if(!pr) return;
+  S.slip.legs.push({kind:'prop',lg:P.lg,id,pid:String(P.id),gid:String(c.next.id||''),
+    d:c.next.t?ymd(new Date(c.next.t)):'',
+    player:c.a.displayName||P.name,pos:c.pos||'',stat:lab,line,dir,
+    pick:`${c.a.displayName||P.name} ${dir==='over'?'o':'u'}${line} ${lab}`,
+    away:c.next.home?(c.next.opp.abbr||''):(c.team?String(c.team).split(' ').pop():''),
+    home:c.next.home?(c.team?String(c.team).split(' ').pop():''):(c.next.opp.abbr||''),
+    opp:c.next.opp.abbr||'',at:c.next.home?'vs':'@',
+    win:Math.round(pr.p*1000)/10,n:pr.n,hits:pr.over,odds:P.odds||'',src:'you'});
+  slipSave();
 }
 
 function renderProps(){
@@ -1977,6 +2144,25 @@ function propPaint(){
   const top=$('ppTop');
   if(top) top.innerHTML=(P.top&&P.top.length>1)?`<h4 style="margin:4px 0 6px">Key stats${esc(c.pos?' \u00b7 '+c.pos:'')}</h4><div class="pmini">${P.top.map(col=>propMini(col,col.i===i)).join('')}</div>`:'';
   let out='';
+  /* add this stat and line to the slip */
+  const dir=P.dir||'over';
+  if(c.next&&!isNaN(line)){
+    const pr=propProb(vals,line,dir,c.w);
+    const odds=P.odds||'';
+    const fair=pr?(pr.p>=.5?'-'+Math.round(100*pr.p/(1-pr.p)):'+'+Math.round(100*(1-pr.p)/pr.p)):'\u2014';
+    const dd=americanDec(odds);
+    const edge=(pr&&dd)?(pr.p-1/dd):null;
+    const on=slipHasLeg(P.lg,propLegId(P,lab,dir));
+    out+=`<div class="slipadd"><span class="seg"><button type="button" data-ppdir="over" class="${dir==='over'?'on':''}">Over</button><button type="button" data-ppdir="under" class="${dir==='under'?'on':''}">Under</button></span>
+      <b>${esc(lab)} ${dir==='over'?'o':'u'}${line}</b>
+      <input type="text" inputmode="text" id="ppOdds" data-ppodds placeholder="book odds" value="${esc(odds)}" aria-label="Book odds for this prop">
+      <button class="btn${on?' ghost':''}" type="button" data-ppslip="1">${on?'\u2713 On slip':'+ Slip'}</button>
+      <span class="muted">model ${pr?(pr.p*100).toFixed(0):'\u2014'}% \u00b7 fair ${fair}${pr?` \u00b7 ${pr.over} of ${pr.n}`:''}${edge!=null?` \u00b7 <b class="${edge>0?'good':'bad'}">${edge>0?'+':''}${(edge*100).toFixed(1)}% edge</b>`:''}</span></div>`;
+    if(pr&&pr.n<8) out+=`<p class="sub" style="margin:6px 0 0">Only ${pr.n} games in the log \u2014 that model number leans on the normal curve more than on what he has actually done.</p>`;
+  } else if(c.next){
+    out+=`<p class="sub" style="margin:10px 0 0">Set a line above to price this stat and add it to the slip.</p>`;
+  }
+
   /* splits */
   const sw=vals.reduce((s,x)=>s+c.w(x.r),0)||1;
   const wavg=vals.reduce((s,x)=>s+c.w(x.r)*x.v,0)/sw;
@@ -2032,12 +2218,16 @@ function propPaint(){
     <p class="sub" style="margin:6px 0 0">Grade source: ${G&&G.stat?esc(G.src)+' \u2014 the defense\u2019s rank in this exact category, not its overall rank':esc(c.def&&c.def.mN?`your model\u2019s opponent-adjusted defensive rating for ${c.def.mN} of ${c.def.n} teams, ESPN standings for the rest`:(c.def&&c.def.paceOn?'ESPN standings, points allowed per game divided by each team\u2019s own pace':'ESPN standings, points allowed per game'))}. A = toughest 20%, F = easiest 20%.${G&&G.stat?'':' It rates a defense overall, not against this one stat.'} The sensitivity line above says how much that grade has actually moved this number for him.</p>`;
   host.innerHTML=out;
   if(actSel&&actSel[1]!=null){ const el=document.querySelector(`[data-ppml="${actSel[1]}"]`); if(el){ el.focus(); try{ el.setSelectionRange(actSel[2],actSel[2]); }catch(e){} } }
+  else if(actSel&&actSel[0]==='ppOdds'){ const el=$('ppOdds'); if(el){ el.focus(); try{ el.setSelectionRange(actSel[2],actSel[2]); }catch(e){} } }
   if(vals.length) propChart({labels:c.labels,rows:c.rows,def:c.def,opp:c.opp,w:c.w},i,vals,line,wavg,lab,'ppChart');
 }
 document.addEventListener('input',e=>{ const t=e.target; if(!t) return;
   if(t.id==='ppLine'){ S.props.lines[S.props.stat]=t.value; propPaint(); }
-  else if(t.id==='ppStat'){ S.props.stat=+t.value; renderProps(); }
-  else if(t.dataset&&t.dataset.ppml!=null){ S.props.lines[+t.dataset.ppml]=t.value; propPaint(); } });
+  else if(t.id==='ppStat'){ S.props.stat=+t.value; S.props.odds=''; renderProps(); }
+  else if(t.dataset&&t.dataset.ppml!=null){ S.props.lines[+t.dataset.ppml]=t.value; propPaint(); }
+  else if(t.id==='ppOdds'){ S.props.odds=t.value; propPaint(); }
+  else if(t.dataset&&t.dataset.legodds!=null){ const l=S.slip.legs[+t.dataset.legodds];
+    if(l){ l.odds=t.value; S.slipFocus=+t.dataset.legodds; slipSave(); renderSlip(); S.slipFocus=null; } } });
 document.addEventListener('keydown',e=>{ if(e.target&&e.target.id==='ppq'&&e.key==='Enter'){ const v=e.target.value.trim(); if(v.length>=2){ e.preventDefault(); propFind(v); e.target.blur(); } } });
 
 async function loadStars(){
