@@ -399,7 +399,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-12-contrast1';
+const BUILD='2026-11-12-input1';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -1835,7 +1835,7 @@ function renderSlip(){
       </div>
       ${Math.abs(edge||0)>1?'<p class="sub" style="margin:8px 0 0">That gap is huge because a leg is a long shot. Long shots are where model and market disagree most, and where the model has been least reliable \u2014 read it as noise, not a signal.</p>':''}
       ${conflicts.length?`<h4 style="margin:12px 0 2px">What to watch</h4>${conflicts.map(c=>`<div class="conf ${c.sev}"><span>${c.sev==='hard'?'\u26d4':'\u26a0\ufe0f'}</span><span><b class="ct">${esc(c.t)}</b>${c.d}</span></div>`).join('')}`:(sl.legs.length>1?'<p class="sub" style="margin:10px 0 0">No conflicts: every leg is a different game, so multiplying the odds is fair here.</p>':'')}
-      <div class="slip-go"><input id="stake" type="number" min="1" step="1" value="${stake}" aria-label="Stake">
+      <div class="slip-go"><input id="stake" type="text" inputmode="numeric" autocomplete="off" value="${stake}" aria-label="Stake">
         <button class="btn" type="button" data-slipgo="1"${ok&&sl.bank>=1&&!blocked?'':' disabled'}>Place ${money(stake)}</button>
         <span class="muted">to win ${dec?money(Math.round(stake*dec*100)/100-stake):'\u2014'}</span>
         <button class="btn ghost" type="button" data-slipclear="1">Clear</button></div>`:''}
@@ -1845,9 +1845,14 @@ function renderSlip(){
       <div style="margin-top:10px"><button class="btn ghost" type="button" data-slipreset="1">Reset bankroll</button></div></div>`:''}
   </div>`;
   if(S.slipFocus!=null){ const n=document.querySelector(`[data-legodds="${S.slipFocus}"]`);
-    if(n){ n.focus(); try{ n.setSelectionRange(n.value.length,n.value.length); }catch(e){} } }
+    if(n){ n.focus(); const c=S.slipFocusAt==null?n.value.length:Math.min(S.slipFocusAt,n.value.length);
+      try{ n.setSelectionRange(c,c); }catch(e){} } }
   const si=document.getElementById('stake');
-  if(si) si.oninput=()=>{ S.slipStake=Math.max(1,Math.round(+si.value||0)); renderSlip(); const n=document.getElementById('stake'); if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length);} };
+  if(si) si.oninput=()=>{ const at=si.selectionStart; const raw=si.value.replace(/[^0-9]/g,'');
+    S.slipStake=Math.max(1,Math.round(+raw||0)); renderSlip();
+    const n=document.getElementById('stake');
+    if(n){ n.focus(); const c=(at==null||isNaN(at))?n.value.length:Math.min(at,n.value.length);
+      try{ n.setSelectionRange(c,c); }catch(e){} } };
 }
 
 /* ---- shared click handling for everything above ---- */
@@ -2063,7 +2068,7 @@ function propMini(col,active){
     const tail=!bh.n?`no grade-${ogr} games yet`:(bh.pct==null?`${bh.avg.toFixed(1)} avg in ${bh.n}`:`${bh.o} of ${bh.n} over`);
     matchup=`<div class="mu" title="${esc((c.next.opp.name||c.next.opp.abbr)+': #'+G.rank+' of '+G.n+' by '+G.src+(G.detail?' ('+G.detail+')':'')+'. A = toughest 20%, F = easiest 20%. His '+col.l+' vs grade-'+ogr+' defenses: '+tail+'.')}"><span>${c.next.home?'vs':'@'} ${esc(c.next.opp.abbr||c.next.opp.name)} <b class="${gc}">${ogr}</b> <span class="muted">#${G.rank}</span></span><span class="muted">${esc(tail)}</span></div>`;
   }
-  return `<div class="pmc${active?' on':''}"><button class="pmbtn" type="button" data-ppstat="${col.i}" style="all:unset;cursor:pointer;display:grid;gap:4px"><span class="nm">${esc(col.l)}</span><span class="big ${cls}">${big}</span><span class="sm">${esc(sub)}</span></button><div class="spark">${bars}</div>${matchup}<input type="number" step="0.5" inputmode="decimal" placeholder="line" value="${esc(propLineOf(col.i))}" data-ppml="${col.i}" aria-label="${esc(col.l)} line"></div>`;
+  return `<div class="pmc${active?' on':''}"><button class="pmbtn" type="button" data-ppstat="${col.i}" style="all:unset;cursor:pointer;display:grid;gap:4px"><span class="nm">${esc(col.l)}</span><span class="big ${cls}">${big}</span><span class="sm">${esc(sub)}</span></button><div class="spark">${bars}</div>${matchup}<input type="text" inputmode="decimal" autocomplete="off" placeholder="line" value="${esc(propLineOf(col.i))}" data-ppml="${col.i}" aria-label="${esc(col.l)} line"></div>`;
 }
 
 /* the grade to show for a given stat: the per-category split when the model has one */
@@ -2131,7 +2136,7 @@ function renderProps(){
 
   /* controls + chart */
   out+=`<div id="ppTop"></div>`;
-  out+=`<div class="prop"><div class="row"><select id="ppStat" aria-label="Stat">${c.num.map(x=>`<option value="${x.i}"${x.i===i?' selected':''}>${esc(x.l)}</option>`).join('')}</select><span class="muted">over</span><input id="ppLine" type="number" step="0.5" inputmode="decimal" placeholder="Line" value="${esc(propLineOf(i))}" aria-label="Prop line"><span class="muted">${esc(c.gl.season||'this season')} · ${vals.length} games</span></div><div id="ppChart"></div></div>`;
+  out+=`<div class="prop"><div class="row"><select id="ppStat" aria-label="Stat">${c.num.map(x=>`<option value="${x.i}"${x.i===i?' selected':''}>${esc(x.l)}</option>`).join('')}</select><span class="muted">over</span><input id="ppLine" type="text" inputmode="decimal" autocomplete="off" placeholder="Line" value="${esc(propLineOf(i))}" aria-label="Prop line"><span class="muted">${esc(c.gl.season||'this season')} · ${vals.length} games</span></div><div id="ppChart"></div></div>`;
 
   out+=`<div id="ppOut"></div>`;
 
@@ -2235,8 +2240,11 @@ function propPaint(){
     return `<tr><td>${esc([dt,[r.atVs,r.opp&&r.opp.abbreviation].filter(Boolean).join(' '),[r.res,r.score].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</td><td${q?` title="#${q.rank} of ${q.n} by ${esc(q.src)}${q.detail?' · '+esc(q.detail):''}"`:''}>${q?`<b class="${'AB'.includes(g)?'good':'DF'.includes(g)?'bad':''}">${g}</b> <span class="muted">#${q.rank}</span>`:'—'}</td>${c.labels.map((l,k)=>`<td${k===i&&mark?` class="${mark}"`:''}>${esc(r.stats[k]==null?'':r.stats[k])}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
     <p class="sub" style="margin:6px 0 0">Grade source: ${G&&G.stat?esc(G.src)+' \u2014 the defense\u2019s rank in this exact category, not its overall rank':esc(c.def&&c.def.mN?`your model\u2019s opponent-adjusted defensive rating for ${c.def.mN} of ${c.def.n} teams, ESPN standings for the rest`:(c.def&&c.def.paceOn?'ESPN standings, points allowed per game divided by each team\u2019s own pace':'ESPN standings, points allowed per game'))}. A = toughest 20%, F = easiest 20%.${G&&G.stat?'':' It rates a defense overall, not against this one stat.'} The sensitivity line above says how much that grade has actually moved this number for him.</p>`;
   host.innerHTML=out;
-  if(actSel&&actSel[1]!=null){ const el=document.querySelector(`[data-ppml="${actSel[1]}"]`); if(el){ el.focus(); try{ el.setSelectionRange(actSel[2],actSel[2]); }catch(e){} } }
-  else if(actSel&&actSel[0]==='ppOdds'){ const el=$('ppOdds'); if(el){ el.focus(); try{ el.setSelectionRange(actSel[2],actSel[2]); }catch(e){} } }
+  const putCaret=(el,at)=>{ if(!el) return; el.focus();
+    const n=(at==null||isNaN(at))?el.value.length:at;
+    try{ el.setSelectionRange(n,n); }catch(e){} };
+  if(actSel&&actSel[1]!=null) putCaret(document.querySelector(`[data-ppml="${actSel[1]}"]`),actSel[2]);
+  else if(actSel&&actSel[0]==='ppOdds') putCaret($('ppOdds'),actSel[2]);
   if(vals.length) propChart({labels:c.labels,rows:c.rows,def:c.def,opp:c.opp,w:c.w},i,vals,line,wavg,lab,'ppChart');
 }
 document.addEventListener('input',e=>{ const t=e.target; if(!t) return;
@@ -2245,7 +2253,8 @@ document.addEventListener('input',e=>{ const t=e.target; if(!t) return;
   else if(t.dataset&&t.dataset.ppml!=null){ S.props.lines[+t.dataset.ppml]=t.value; propPaint(); }
   else if(t.id==='ppOdds'){ S.props.odds=t.value; propPaint(); }
   else if(t.dataset&&t.dataset.legodds!=null){ const l=S.slip.legs[+t.dataset.legodds];
-    if(l){ l.odds=t.value; S.slipFocus=+t.dataset.legodds; slipSave(); renderSlip(); S.slipFocus=null; } } });
+    if(l){ l.odds=t.value; S.slipFocus=+t.dataset.legodds; S.slipFocusAt=t.selectionStart;
+      slipSave(); renderSlip(); S.slipFocus=null; S.slipFocusAt=null; } } });
 document.addEventListener('keydown',e=>{ if(e.target&&e.target.id==='ppq'&&e.key==='Enter'){ const v=e.target.value.trim(); if(v.length>=2){ e.preventDefault(); propFind(v); e.target.blur(); } } });
 
 async function loadStars(){
