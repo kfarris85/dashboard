@@ -19,7 +19,7 @@ env:   MONEYLINE_API_KEY (required)
 import sys, os, json, urllib.request, urllib.parse
 from datetime import datetime, timezone
 
-API = 'https://mlapi.bet/v1'
+API = 'https://mlapi.bet'
 KEY = os.environ.get('MONEYLINE_API_KEY')
 if not KEY:
     print('MONEYLINE_API_KEY not set', file=sys.stderr)
