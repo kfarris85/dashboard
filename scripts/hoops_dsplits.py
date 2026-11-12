@@ -49,7 +49,11 @@ def main():
     allowed.index.name = 'team_id'
     ag = b.groupby('opponent_team_id').size().rename('g')
 
-    keep = sorted(set(allowed.index[ag >= MING]) & set(off.index))
+    # All-Star and exhibition sides (STARS, WORLD, a G-League guest) show up with a
+    # handful of games and would otherwise be ranked alongside real teams.
+    med = float(ag.median()) if len(ag) else 0.0
+    floor = max(MING, 0.4 * med)
+    keep = sorted(set(allowed.index[ag >= floor]) & set(off.index))
     lg = {c: float(off[c].mean()) for c in cols}
 
     # strength of schedule: the average offense each defense faced
@@ -75,6 +79,7 @@ def main():
     out = {'updated': datetime.now(timezone.utc).astimezone().isoformat(timespec='seconds'),
            'league': LEAGUE, 'through': str(b.game_date.max())[:10],
            'source': f'hoopR team box, schedule-adjusted (hoops_dsplits.py), min {MING} games',
+           'minGames': round(floor, 1),
            'n': len(keep),
            'cats': {k: {'label': v[2], 'lowerBetter': v[1], 'lg': round(lg[v[0]], 2)} for k, v in CATS.items()},
            'teams': teams}

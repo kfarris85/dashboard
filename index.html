@@ -386,7 +386,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-11-dsplit1';
+const BUILD='2026-11-11-dsplit2';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -789,7 +789,7 @@ function statGrade(lg,t,pos,label){
   if(!e||!e[cat]||!meta) return null;
   const r=e[cat].rank, n=D.n;
   const f=x=>Math.abs(x)>=10?(+x).toFixed(1):(+x).toFixed(2);
-  return {g:dGrade(meta.lowerBetter?r:(n-r+1),n),rank:r,n,src:(lg==='nfl'?'NFL':'CBB')+' model · '+meta.label,
+  return {g:dGrade(meta.lowerBetter?r:(n-r+1),n),rank:r,n,src:(HLG[lg]||String(lg).toUpperCase())+' model · '+meta.label,
     detail:`${f(e[cat].v)} vs a league average of ${f(meta.lg)}, over ${e.g} games`,adj:true,stat:true,cat};
 }
 /* one grade per defense, from the best source available for that league */
