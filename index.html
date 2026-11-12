@@ -303,11 +303,12 @@ a{color:var(--home)}
 .pmc .nm{font:700 11px var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pmc .big{font:700 21px/1 var(--f-display);font-variant-numeric:tabular-nums}
 .pmc .sm{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmc .mu{display:grid;gap:1px;font-size:11.5px;line-height:1.25;border-top:1px solid var(--line);padding-top:5px;overflow-wrap:anywhere}
 .pmc .spark{display:flex;align-items:flex-end;gap:2px;height:30px}
 .pmc .spark i{flex:1;min-width:2px;border-radius:2px 2px 0 0;background:var(--muted);opacity:.45}
 .pmc .spark i.over{background:var(--good);opacity:1} .pmc .spark i.under{background:var(--bad);opacity:1} .pmc .spark i.push{background:var(--warn);opacity:1}
 .pmc input{width:100%;box-sizing:border-box;font:600 13px var(--f-body);color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 6px;text-align:center}
-@media (max-width:560px){ .pmini{gap:5px} .pmc{padding:6px 6px} .pmc .big{font-size:18px} .pmc .nm{font-size:10px;letter-spacing:.04em} .pmc .sm{font-size:10.5px} .pmc .spark{height:24px} }
+@media (max-width:560px){ .pmini{gap:5px} .pmc{padding:6px 6px} .pmc .big{font-size:18px} .pmc .nm{font-size:10px;letter-spacing:.04em} .pmc .sm{font-size:10.5px} .pmc .spark{height:24px} .pmc .mu{font-size:10px;padding-top:4px} }
 .btable td.good{color:var(--good);font-weight:700} .btable td.bad{color:var(--bad);font-weight:700}
 @media (max-width:560px){ .pgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px} }
 .tab.hist-tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
@@ -385,7 +386,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-11-props2';
+const BUILD='2026-11-11-props3';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -1823,7 +1824,18 @@ function propMini(col,active){
   const big=!h.n?'\u2014':(h.pct==null?h.avg.toFixed(1):pctTxt(h.pct));
   const cls=h.pct==null?'':h.pct>=.6?'good':h.pct<=.4?'bad':'';
   const sub=!h.n?'no games':(h.pct==null?`avg \u00b7 L5 ${l5.avg!=null?l5.avg.toFixed(1):'\u2014'}`:`${h.o} of ${h.n} \u00b7 avg ${h.avg.toFixed(1)}`);
-  return `<div class="pmc${active?' on':''}"><button class="pmbtn" type="button" data-ppstat="${col.i}" style="all:unset;cursor:pointer;display:grid;gap:4px"><span class="nm">${esc(col.l)}</span><span class="big ${cls}">${big}</span><span class="sm">${esc(sub)}</span></button><div class="spark">${bars}</div><input type="number" step="0.5" inputmode="decimal" placeholder="line" value="${esc(propLineOf(col.i))}" data-ppml="${col.i}" aria-label="${esc(col.l)} line"></div>`;
+  const c=S.props.ctx;
+  const og=c&&c.next&&c.next.opp&&c.def?c.def.teams[c.next.opp.id]:null;
+  const ogr=og?dGrade(og.rank,c.def.n):null;
+  let matchup='';
+  if(og){
+    const band=vals.filter(x=>{const t=c.opp(x.r); return t&&dGrade(t.rank,c.def.n)===ogr;});
+    const bh=propHit(band,ln);
+    const gc='AB'.includes(ogr)?'bad':'DF'.includes(ogr)?'good':'';
+    const tail=!bh.n?`no grade-${ogr} games yet`:(bh.pct==null?`${bh.avg.toFixed(1)} avg in ${bh.n}`:`${bh.o} of ${bh.n} over`);
+    matchup=`<div class="mu" title="${esc((c.next.opp.name||c.next.opp.abbr)+' allow '+og.pa.toFixed(1)+' per game, #'+og.rank+' of '+c.def.n+'. Grade A = toughest 20%, F = easiest 20%. His '+col.l+' vs grade-'+ogr+' defenses: '+tail+'.')}"><span>${c.next.home?'vs':'@'} ${esc(c.next.opp.abbr||c.next.opp.name)} <b class="${gc}">${ogr}</b> <span class="muted">#${og.rank}</span></span><span class="muted">${esc(tail)}</span></div>`;
+  }
+  return `<div class="pmc${active?' on':''}"><button class="pmbtn" type="button" data-ppstat="${col.i}" style="all:unset;cursor:pointer;display:grid;gap:4px"><span class="nm">${esc(col.l)}</span><span class="big ${cls}">${big}</span><span class="sm">${esc(sub)}</span></button><div class="spark">${bars}</div>${matchup}<input type="number" step="0.5" inputmode="decimal" placeholder="line" value="${esc(propLineOf(col.i))}" data-ppml="${col.i}" aria-label="${esc(col.l)} line"></div>`;
 }
 
 function renderProps(){
