@@ -1,0 +1,38 @@
+name: MoneyLine Odds Publish
+
+on:
+  schedule:
+    # 8:15am US Central (approx — GitHub cron is UTC-only, so this drifts an
+    # hour during daylight saving; runs after the daily picks/dsplits publish).
+    - cron: '15 14 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Fetch MoneyLine data (budget-capped, free tier)
+        env:
+          MONEYLINE_API_KEY: ${{ secrets.MONEYLINE_API_KEY }}
+        run: python3 -I scripts/moneyline_fetch.py data/picks.json data/moneyline.json
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/moneyline.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update MoneyLine odds/props data [skip ci]"
+            git push
+          else
+            echo "no change"
+          fi
