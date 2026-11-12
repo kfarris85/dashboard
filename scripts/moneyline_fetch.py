@@ -134,6 +134,10 @@ def main():
         away_id = tmap.get(norm_abbr(g.get('away')))
         home_id = tmap.get(norm_abbr(g.get('home')))
         evlist = events_for(mlg, date)
+        print(f'DEBUG {mlg} {date}: teams={len(tmap)} sample={list(tmap.items())[:5]} '
+              f'away={g.get("away")}->{away_id} home={g.get("home")}->{home_id} '
+              f'events={len(evlist)} sample_ev={[{"a":e.get("awayTeamId"),"h":e.get("homeTeamId"),"an":e.get("awayTeamName"),"hn":e.get("homeTeamName")} for e in evlist[:3]]}',
+              file=sys.stderr)
         ev = match_event(evlist, away_id, home_id)
         if not ev:
             # the game can fall on the next UTC calendar day for late local kickoffs
