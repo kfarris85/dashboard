@@ -140,7 +140,10 @@ def events_for(mlg, date):
     k = (mlg, date)
     if k not in _events_cache:
         try:
-            d = call('/v1/events', 1, league=mlg, date=date)
+            # limit maxes out at 100 for this endpoint (still 1 credit) — the
+            # default of 25 was silently truncating big cbb slates (94 games
+            # today) before the game we wanted ever showed up in the page
+            d = call('/v1/events', 1, league=mlg, date=date, limit=100)
             _events_cache[k] = d.get('data') or []
         except Exception as e:
             print(f'events lookup failed {k}: {e}', file=sys.stderr)
@@ -194,10 +197,6 @@ def main():
                 ev = match_event(events_for(mlg, nd), away_name, home_name)
             except Exception:
                 pass
-        if not ev:
-            print(f'DEBUG no match {mlg} {date}: want away={away_name!r} home={home_name!r} '
-                  f'names={[ (e.get("awayTeamName"), e.get("homeTeamName")) for e in evlist ]}',
-                  file=sys.stderr)
         if ev:
             eid = ev.get('eventId')
             rec.update(eventId=eid, matched=True)
