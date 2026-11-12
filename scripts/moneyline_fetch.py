@@ -17,7 +17,7 @@ usage: python3 -I moneyline_fetch.py <picks.json> <out.json>
 env:   MONEYLINE_API_KEY (required)
 """
 import sys, os, json, urllib.request, urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 API = 'https://mlapi.bet'
 KEY = os.environ.get('MONEYLINE_API_KEY')
@@ -27,7 +27,7 @@ if not KEY:
 
 PICKS, OUT = sys.argv[1], sys.argv[2]
 MAX_GAMES = 3
-BUDGET = 30  # hard credit ceiling for this run; stop paid calls once hit
+BUDGET = 35  # hard credit ceiling for this run; stop paid calls once hit
 
 LG_MAP = {'nfl': 'nfl', 'cfb': 'ncaa_football', 'nba': 'nba', 'cbb': 'ncaa_basketball', 'mlb': 'mlb'}
 
@@ -49,8 +49,8 @@ def call(path, cost, **params):
     return body
 
 
-def norm(s):
-    return (s or '').lower().replace('.', '').replace("'", '').replace('st ', 'saint ').strip()
+def norm_abbr(s):
+    return (s or '').strip().upper()
 
 
 def pick_games():
@@ -63,6 +63,25 @@ def pick_games():
             cands.append((1 if g.get('best') is True else 0, edge, lg, mlg, g))
     cands.sort(key=lambda x: (x[0], x[1]), reverse=True)
     return cands[:MAX_GAMES]
+
+
+_teams_cache = {}
+
+
+def teams_for(mlg):
+    """abbreviation (upper) -> teamId, for one league. Cached per run."""
+    if mlg not in _teams_cache:
+        amap = {}
+        try:
+            d = call('/v1/teams', 1, league=mlg, limit=400)
+            for t in (d.get('data') or []):
+                ab = norm_abbr(t.get('abbreviation'))
+                if ab:
+                    amap[ab] = t.get('teamId')
+        except Exception as e:
+            print(f'teams lookup failed {mlg}: {e}', file=sys.stderr)
+        _teams_cache[mlg] = amap
+    return _teams_cache[mlg]
 
 
 _events_cache = {}
@@ -80,15 +99,19 @@ def events_for(mlg, date):
     return _events_cache[k]
 
 
-def match_event(evlist, away, home):
-    a, h = norm(away), norm(home)
+def match_event(evlist, away_id, home_id):
+    """Match on MoneyLine team ids resolved from our abbreviations — far more
+    reliable than fuzzy name matching, especially for college team names that
+    different providers abbreviate differently."""
+    if not away_id or not home_id:
+        return None
     for e in evlist:
-        ea, eh = norm(e.get('awayTeamName')), norm(e.get('homeTeamName'))
-        if a and h and (a in ea or ea in a) and (h in eh or eh in h):
+        if e.get('awayTeamId') == away_id and e.get('homeTeamId') == home_id:
             return e
+    # some events list only one side populated, or home/away swapped upstream
     for e in evlist:
-        ea, eh = norm(e.get('awayTeamName')), norm(e.get('homeTeamName'))
-        if (a and (a in ea or ea in a)) or (h and (h in eh or eh in h)):
+        ids = {e.get('awayTeamId'), e.get('homeTeamId')}
+        if away_id in ids and home_id in ids:
             return e
     return None
 
@@ -107,8 +130,18 @@ def main():
     for best, edge, lg, mlg, g in pick_games():
         date = g.get('date')
         rec = {'lg': lg, 'away': g.get('away'), 'home': g.get('home'), 'date': date, 'matched': False}
+        tmap = teams_for(mlg)
+        away_id = tmap.get(norm_abbr(g.get('away')))
+        home_id = tmap.get(norm_abbr(g.get('home')))
         evlist = events_for(mlg, date)
-        ev = match_event(evlist, g.get('away'), g.get('home'))
+        ev = match_event(evlist, away_id, home_id)
+        if not ev:
+            # the game can fall on the next UTC calendar day for late local kickoffs
+            try:
+                nd = (datetime.fromisoformat(date) + timedelta(days=1)).date().isoformat()
+                ev = match_event(events_for(mlg, nd), away_id, home_id)
+            except Exception:
+                pass
         if ev:
             eid = ev.get('eventId')
             rec.update(eventId=eid, matched=True)
