@@ -399,7 +399,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-12-input1';
+const BUILD='2026-11-12-input2';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -516,35 +516,100 @@ function schedule(){
 function sumTTL(g){return g.state==='in'?25000:g.state==='pre'?600000:1800000}
 async function loadSummary(g){
   const c=S.sum[g.id]; if(c&&Date.now()-c.t<sumTTL(g)) return false;
-  try{ const d=await getJSON(API+LEAGUES[S.league].path+'/summary?event='+g.id,15000); S.sum[g.id]=parseSum(d); return true; }catch(e){ return false; }
+  try{ const d=await getJSON(API+LEAGUES[S.league].path+'/summary?event='+g.id,15000); S.sum[g.id]=await parseSum(d,S.league); return true; }catch(e){ return false; }
 }
-function parseSum(d){
+async function parseSum(d,lg){
+  lg=lg||S.league;
   const o={t:Date.now()};
   if(Array.isArray(d.winprobability)&&d.winprobability.length) o.wp=d.winprobability.map(x=>x.homeWinPercentage).filter(v=>typeof v==='number');
   const pr=d.predictor; if(pr&&pr.homeTeam){const h=parseFloat(pr.homeTeam.gameProjection); if(!isNaN(h)) o.pre=h/100;}
   o.inj=(d.injuries||[]).map(t=>({id:t.team&&t.team.id,abbr:t.team&&t.team.abbreviation,list:(t.injuries||[]).map(i=>({name:(i.athlete&&(i.athlete.displayName||i.athlete.shortName))||'',pos:(i.athlete&&i.athlete.position&&i.athlete.position.abbreviation)||'',status:i.status||(i.type&&i.type.description)||'',what:(i.details&&(i.details.type||i.details.detail))||''}))}));
   o.stats=((d.boxscore&&d.boxscore.teams)||[]).map(t=>({id:t.team&&t.team.id,abbr:t.team&&t.team.abbreviation,stats:(t.statistics||[]).map(s=>({k:s.name,label:s.label||s.abbreviation||s.name,v:s.displayValue}))}));
-  o.leaders=(d.leaders||[]).map(t=>({abbr:t.team&&t.team.abbreviation,cats:(t.leaders||[]).slice(0,3).map(c=>({id:val(c,'leaders',0,'athlete','id'),role:c.name||'',cat:c.displayName||c.name,who:c.leaders&&c.leaders[0]&&c.leaders[0].athlete&&c.leaders[0].athlete.displayName,val:c.leaders&&c.leaders[0]&&c.leaders[0].displayValue})).filter(c=>c.who)}));
-  o.top=[];
-  const pickStats=(labels,stats,want)=>want.map(l=>{const i=labels.indexOf(l);return i>=0&&stats[i]!=null&&stats[i]!==''?{k:l,v:stats[i]}:null}).filter(Boolean);
   const nm=a=>(a&&a.athlete&&(a.athlete.displayName||a.athlete.shortName))||'';
   const ps=a=>(a&&a.athlete&&a.athlete.position&&a.athlete.position.abbreviation)||'';
-  for(const t of ((d.boxscore&&d.boxscore.players)||[])){
-    const cats=t.statistics||[]; const players=[]; const abbr=t.team&&t.team.abbreviation;
-    if(cats.some(c=>c.name==='passing')){
+  const num=v=>parseFloat(v)||0;
+  const pickStats=(labels,stats,want)=>want.map(l=>{const i=labels.indexOf(l);return i>=0&&stats[i]!=null&&stats[i]!==''?{k:l,v:stats[i]}:null}).filter(Boolean);
+
+  /* pregame fallback: ESPN's season-leader feed, relabeled per sport so it reads like the real thing */
+  const leadRole=(lg==='nfl'||lg==='cfb')?(n=>{n=String(n||'').toLowerCase(); if(n.startsWith('pass')) return 'QB'; if(n.startsWith('rush')) return 'RB'; if(n.startsWith('rece')) return 'WR'; return '';})
+    :(lg==='nba'||lg==='cbb')?(n=>{n=String(n||'').toLowerCase(); if(n==='rebounds') return 'defense'; return 'offense';})
+    :(()=>'hitter');
+  o.leaders=(d.leaders||[]).map(t=>({abbr:t.team&&t.team.abbreviation,cats:(t.leaders||[]).slice(0,4).map(c=>({id:val(c,'leaders',0,'athlete','id'),role:leadRole(c.name),cat:c.displayName||c.name,who:c.leaders&&c.leaders[0]&&c.leaders[0].athlete&&c.leaders[0].athlete.displayName,val:c.leaders&&c.leaders[0]&&c.leaders[0].displayValue})).filter(c=>c.who)}));
+
+  o.top=[];
+  const bp=(d.boxscore&&d.boxscore.players)||[];
+
+  if(lg==='nfl'||lg==='cfb'){
+    /* starting QB / RB / WR / TE — box scores don't carry position, so pull it from the roster */
+    const rosters={};
+    await Promise.all(bp.map(async t=>{ const tid=t.team&&t.team.id; if(tid) rosters[tid]=await propRoster(lg,tid); }));
+    for(const t of bp){
+      const cats=t.statistics||[]; const players=[]; const abbr=t.team&&t.team.abbreviation;
+      const ros=rosters[t.team&&t.team.id]||null;
+      const posOf=a=>{ const n=nm(a); if(!ros) return ps(a); const r=ros.find(x=>x.name===n); return (r&&r.pos)||ps(a); };
+      const used=new Set();
       const want={passing:['C/ATT','YDS','TD','INT'],rushing:['CAR','YDS','TD','AVG'],receiving:['REC','YDS','TD','TGTS']};
-      for(const k of ['passing','rushing','receiving']){ const c=cats.find(x=>x.name===k); const a=c&&(c.athletes||[]).find(x=>x.stats&&x.stats.length);
-        if(a) players.push({id:val(a,'athlete','id'),name:nm(a),pos:ps(a),role:k,line:pickStats(c.labels||[],a.stats,want[k])}); }
-    } else if(cats[0]){
-      const c=cats[0], L=c.labels||[]; const ip=L.indexOf('PTS');
-      let ath=(c.athletes||[]).filter(a=>a.stats&&a.stats.length&&!a.didNotPlay);
-      let st=ath.filter(a=>a.starter); if(st.length<3) st=ath;
-      if(ip>=0) st=[...st].sort((x,y)=>(parseFloat(y.stats[ip])||0)-(parseFloat(x.stats[ip])||0));
-      const want=ip>=0?['MIN','PTS','REB','AST','FG','3PT']:['H-AB','R','H','RBI','HR','BB'];
-      st.slice(0,3).forEach(a=>players.push({id:val(a,'athlete','id'),name:nm(a),pos:ps(a),role:a.starter?'starter':'',line:pickStats(L,a.stats,want)}));
+      const pc=cats.find(c=>c.name==='passing'), rc=cats.find(c=>c.name==='rushing'), recc=cats.find(c=>c.name==='receiving');
+      if(pc&&pc.athletes&&pc.athletes.length){
+        const L=pc.labels||[], ai=L.indexOf('C/ATT');
+        const att=a=>{ const s=(ai>=0&&a.stats[ai])||''; const m=/\/(\d+)/.exec(s); return m?parseFloat(m[1]):0; };
+        const qb=[...pc.athletes].filter(a=>a.stats&&a.stats.length).sort((x,y)=>att(y)-att(x))[0];
+        if(qb){ players.push({id:val(qb,'athlete','id'),name:nm(qb),pos:posOf(qb)||'QB',role:'QB',line:pickStats(L,qb.stats,want.passing)}); used.add(nm(qb)); }
+      }
+      if(rc&&rc.athletes&&rc.athletes.length){
+        const L=rc.labels||[], yi=L.indexOf('YDS');
+        const byYds=[...rc.athletes].filter(a=>a.stats&&a.stats.length&&!used.has(nm(a))).sort((x,y)=>num(y.stats[yi])-num(x.stats[yi]));
+        const rb=byYds.find(a=>/^(RB|FB|HB)$/i.test(posOf(a)))||byYds[0];
+        if(rb){ players.push({id:val(rb,'athlete','id'),name:nm(rb),pos:posOf(rb)||'RB',role:'RB',line:pickStats(L,rb.stats,want.rushing)}); used.add(nm(rb)); }
+      }
+      if(recc&&recc.athletes&&recc.athletes.length){
+        const L=recc.labels||[], yi=L.indexOf('YDS');
+        const byYds=[...recc.athletes].filter(a=>a.stats&&a.stats.length&&!used.has(nm(a))).sort((x,y)=>num(y.stats[yi])-num(x.stats[yi]));
+        const wr=byYds.find(a=>posOf(a).toUpperCase()==='WR')||byYds[0];
+        if(wr){ players.push({id:val(wr,'athlete','id'),name:nm(wr),pos:posOf(wr)||'WR',role:'WR',line:pickStats(L,wr.stats,want.receiving)}); used.add(nm(wr)); }
+        const te=byYds.find(a=>posOf(a).toUpperCase()==='TE'&&!used.has(nm(a)))||byYds.find(a=>!used.has(nm(a)));
+        if(te){ players.push({id:val(te,'athlete','id'),name:nm(te),pos:posOf(te)||'TE',role:'TE',line:pickStats(L,te.stats,want.receiving)}); used.add(nm(te)); }
+      }
+      if(players.length) o.top.push({abbr,players});
     }
-    if(players.length) o.top.push({abbr,players});
+  } else if(lg==='nba'||lg==='cbb'){
+    /* 2 offensive leaders (points) + 2 defensive leaders (steals+blocks+boards) */
+    for(const t of bp){
+      const cats=t.statistics||[]; const players=[]; const abbr=t.team&&t.team.abbreviation;
+      const c=cats.find(x=>(x.labels||[]).includes('PTS'))||cats[0]; if(!c) continue;
+      const L=c.labels||[]; const pi=L.indexOf('PTS'), ri=L.indexOf('REB'), si=L.indexOf('STL'), bi=L.indexOf('BLK');
+      const ath=(c.athletes||[]).filter(a=>a.stats&&a.stats.length&&!a.didNotPlay);
+      const off=[...ath].sort((x,y)=>num(y.stats[pi])-num(x.stats[pi])).slice(0,2);
+      const offNames=new Set(off.map(nm));
+      const dScore=a=>num(a.stats[si])*1.5+num(a.stats[bi])*1.5+num(a.stats[ri])*0.5;
+      const def=ath.filter(a=>!offNames.has(nm(a))).sort((x,y)=>dScore(y)-dScore(x)).slice(0,2);
+      const want=['MIN','PTS','REB','AST','STL','BLK'];
+      off.forEach(a=>players.push({id:val(a,'athlete','id'),name:nm(a),pos:ps(a),role:'offense',line:pickStats(L,a.stats,want)}));
+      def.forEach(a=>players.push({id:val(a,'athlete','id'),name:nm(a),pos:ps(a),role:'defense',line:pickStats(L,a.stats,want)}));
+      if(players.length) o.top.push({abbr,players});
+    }
+  } else if(lg==='mlb'){
+    /* starting pitcher + the 4 hitters who did the most damage that game */
+    for(const t of bp){
+      const cats=t.statistics||[]; const players=[]; const abbr=t.team&&t.team.abbreviation;
+      const bc=cats.find(x=>(x.labels||[]).includes('RBI')), pcat=cats.find(x=>(x.labels||[]).includes('ERA'));
+      if(pcat){
+        const L=pcat.labels||[];
+        const sp=(pcat.athletes||[]).find(a=>a.starter&&a.stats&&a.stats.length)||(pcat.athletes||[]).find(a=>a.stats&&a.stats.length);
+        if(sp) players.push({id:val(sp,'athlete','id'),name:nm(sp),pos:ps(sp)||'SP',role:'SP',line:pickStats(L,sp.stats,['IP','H','R','ER','BB','K'])});
+      }
+      if(bc){
+        const L=bc.labels||[]; const hi=L.indexOf('H'), hri=L.indexOf('HR'), rbi=L.indexOf('RBI'), ri=L.indexOf('R');
+        let bats=(bc.athletes||[]).filter(a=>a.stats&&a.stats.length&&a.starter);
+        if(bats.length<4) bats=(bc.athletes||[]).filter(a=>a.stats&&a.stats.length);
+        const score=a=>num(a.stats[hi])+num(a.stats[hri])*2+num(a.stats[rbi])*1.5+num(a.stats[ri]);
+        [...bats].sort((x,y)=>score(y)-score(x)).slice(0,4)
+          .forEach(a=>players.push({id:val(a,'athlete','id'),name:nm(a),pos:ps(a),role:'hitter',line:pickStats(L,a.stats,['H-AB','R','H','RBI','HR','BB'])}));
+      }
+      if(players.length) o.top.push({abbr,players});
+    }
   }
+
   if(Array.isArray(d.plays)&&d.plays.length) o.last=d.plays[d.plays.length-1].text;
   if(d.gameInfo&&d.gameInfo.weather) o.espnWx=d.gameInfo.weather;
   o.series=(d.seasonseries||[]).filter(x=>x.type!=='current').map(x=>({type:x.type,ev:(x.events||[]).map(e=>h2hEv(e,e.competitors,(e.statusType&&e.statusType.state)||e.status))}));
@@ -689,10 +754,12 @@ function detail(g,p){
     out.push(`<div><h4>Team stats</h4><div class="tbl"><table><thead><tr><th></th><th>${esc(a.abbr)}</th><th>${esc(b.abbr)}</th></tr></thead><tbody>${keys.map(k=>`<tr><td>${esc((A[k]||B[k]).label)}</td><td>${esc(A[k]?A[k].v:'')}</td><td>${esc(B[k]?B[k].v:'')}</td></tr>`).join('')}</tbody></table></div></div>`);
   }
   const plink=n=>`<button class="plink" type="button" data-pname="${esc(n)}">${esc(n)}</button>`;
+  const topTitle=(lg=>lg==='nfl'||lg==='cfb'?'Starting QB · RB · WR · TE':lg==='nba'||lg==='cbb'?'2 offense · 2 defense':lg==='mlb'?'Starting pitcher · top 4 hitters':'Top players')(S.league);
+  const posTag=p=>{ const r=String(p.role||'').toUpperCase(), pos=String(p.pos||'').toUpperCase(); if(!pos||pos===r) return esc(p.pos||p.role||''); return `${esc(p.pos)} · ${esc(p.role)}`; };
   if(s.top&&s.top.length){
-    out.push(`<div><h4>Top 3 players · ${g.state==='in'?'live':'this game'}</h4><div class="injcols">${s.top.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.players.map(p=>`<li>${plink(p.name)} <span>${esc(p.pos)}${p.role?' · '+esc(p.role):''}</span><br><span class="sl">${p.line.map(x=>`${esc(x.k)} <b>${esc(x.v)}</b>`).join(' · ')||'—'}</span>${wavHTML(p.id,p.role)}</li>`).join('')}</ul></div>`).join('')}</div></div>`);
+    out.push(`<div><h4>${esc(topTitle)} · ${g.state==='in'?'live':'this game'}</h4><div class="injcols">${s.top.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.players.map(p=>`<li>${plink(p.name)} <span>${posTag(p)}</span><br><span class="sl">${p.line.map(x=>`${esc(x.k)} <b>${esc(x.v)}</b>`).join(' · ')||'—'}</span>${wavHTML(p.id,p.role)}</li>`).join('')}</ul></div>`).join('')}</div></div>`);
   } else if(s.leaders&&s.leaders.some(t=>t.cats.length)){
-    out.push(`<div><h4>Top 3 players · season leaders</h4><div class="injcols">${s.leaders.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.cats.map(c=>`<li>${plink(c.who)}<br><span class="sl">${esc(c.cat)}: <b>${esc(c.val)}</b></span>${wavHTML(c.id,c.role)}</li>`).join('')}</ul></div>`).join('')}</div><p class="muted" style="margin-top:6px;font-size:12.5px">Game stats replace these at kickoff. “Opp-weighted” lines are this season’s per-game averages, weighted by opponent defense.</p></div>`);
+    out.push(`<div><h4>${esc(topTitle)} · season leaders</h4><div class="injcols">${s.leaders.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.cats.map(c=>`<li>${plink(c.who)}<br><span class="sl">${esc(c.cat)}: <b>${esc(c.val)}</b></span>${wavHTML(c.id,c.role)}</li>`).join('')}</ul></div>`).join('')}</div><p class="muted" style="margin-top:6px;font-size:12.5px">Game stats replace these at kickoff. “Opp-weighted” lines are this season’s per-game averages, weighted by opponent defense.</p></div>`);
   }
   out.push(rankHTML(g));
   out.push(h2hHTML(g));
@@ -852,14 +919,16 @@ async function defense(lg){
 }
 /* opponent-weighted season averages for the top players inside game details */
 S.wav={};
+S.ros={};
 function wavCols(lg,role){
   role=String(role||'').toLowerCase();
   if(lg==='nfl'||lg==='cfb'){
-    if(role.startsWith('pass')) return {anchor:['CMP','C/ATT','COMP'],cols:[['YDS',['passingYards']],['TD',['passingTouchdowns']],['INT',['interceptions']]]};
-    if(role.startsWith('rush')) return {anchor:['CAR','ATT'],cols:[['CAR',['rushingAttempts']],['YDS',['rushingYards']],['TD',['rushingTouchdowns']]]};
+    if(role==='qb'||role.startsWith('pass')) return {anchor:['CMP','C/ATT','COMP'],cols:[['YDS',['passingYards']],['TD',['passingTouchdowns']],['INT',['interceptions']]]};
+    if(role==='rb'||role.startsWith('rush')) return {anchor:['CAR','ATT'],cols:[['CAR',['rushingAttempts']],['YDS',['rushingYards']],['TD',['rushingTouchdowns']]]};
     return {anchor:['REC'],cols:[['REC',['receptions']],['YDS',['receivingYards']],['TD',['receivingTouchdowns']]]};
   }
   if(lg==='nba'||lg==='cbb') return {anchor:[],cols:[['PTS',['points']],['REB',['totalRebounds','rebounds']],['AST',['assists']],['MIN',['minutes']]]};
+  if(lg==='mlb'&&(role==='sp'||role==='pitcher')) return {anchor:[],cols:[['IP',['innings']],['ER',['earnedRuns']],['K',['strikeouts']],['BB',['walks']]]};
   return {anchor:[],cols:[['H',['hits']],['HR',['homeRuns']],['RBI',['RBIs','RBI','runsBattedIn']]]};
 }
 function colIndex(labels,names,label,cands,anchor){
@@ -1298,7 +1367,7 @@ async function loadMV(force){
   if(S.league==='mv') renderMV();
   // live games: refresh the play-by-play summary for situation + win probability
   const live=S.mv.map(x=>[x,S.mvEv[x.lg+'|'+x.id]]).filter(([x,g])=>g&&g.state==='in');
-  await Promise.all(live.map(async([x,g])=>{ try{ const d=await getJSON(API+LEAGUES[x.lg].path+'/summary?event='+g.id,15000); S.sum[g.id]=Object.assign(parseSum(d),{t:Date.now()}); }catch(e){} }));
+  await Promise.all(live.map(async([x,g])=>{ try{ const d=await getJSON(API+LEAGUES[x.lg].path+'/summary?event='+g.id,15000); S.sum[g.id]=Object.assign(await parseSum(d,x.lg),{t:Date.now()}); }catch(e){} }));
   S.mvFlight=false; S.mvLast=Date.now();
   const soon=Date.now()+15*60000;
   S.mvHot=S.mv.some(x=>{const g=S.mvEv[x.lg+'|'+x.id]; return g&&(g.state==='in'||(g.state==='pre'&&g.date<soon));});
@@ -1947,6 +2016,7 @@ async function propNext(lg,teamId){
 
 async function propRoster(lg,teamId){
   if(!teamId) return null;
+  const k=lg+'|'+teamId; const c=S.ros[k]; if(c&&Date.now()-c.t<4*3600000) return c.v;
   try{
     const d=await getJSON(API+LEAGUES[lg].path+'/teams/'+teamId+'/roster',15000);
     const out=[];
@@ -1954,7 +2024,7 @@ async function propRoster(lg,teamId){
       out.push({name:a.displayName,pos:val(a,'position','abbreviation')||val(a,'position','displayName')||'',num:String(a.jersey||'').replace('#',''),
         st:inj?(inj.status||val(inj,'type','description')||''):'',note:inj?(val(inj,'details','type')||inj.longComment||inj.shortComment||''):''}); };
     (d.athletes||[]).forEach(g=>{ if(g&&Array.isArray(g.items)) g.items.forEach(push); else push(g); });
-    return out.length?out:null;
+    const v=out.length?out:null; S.ros[k]={t:Date.now(),v}; return v;
   }catch(e){ return null; }
 }
 
