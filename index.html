@@ -386,7 +386,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-11-props3';
+const BUILD='2026-11-11-props4';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -755,9 +755,26 @@ async function searchPlayers(q,autoName){
     :`<p class="muted" style="margin:0">${err?`Player search couldn’t reach ESPN (${esc(err)}).`:`No NFL, college football, NBA, college basketball or MLB players match “${esc(q)}”.`}</p>`}</div>`;
 }
 const val=(o,...ks)=>{for(const k of ks){ if(o==null) return undefined; o=o[k]; } return o;};
+/* the daily/weekly models publish opponent-adjusted defensive ratings for some leagues */
+function modelDef(lg,id,t){
+  try{
+    if(lg==='nfl'){ const R=S.nflRanks, e=R&&R.teams&&R.teams[t.abbr];
+      if(e&&e.def) return {rank:+e.def,n:R.n||32,src:'NFL model',detail:e.defEpa!=null?(e.defEpa>=0?'+':'')+(+e.defEpa).toFixed(3)+' EPA allowed per play':null}; }
+    if(lg==='cbb'){ const R=S.cbbRanks, e=R&&R.teams&&R.teams[String(id)];
+      if(e&&e.defRank) return {rank:+e.defRank,n:R.n||0,src:'CBB model',detail:e.def!=null?(+e.def).toFixed(1)+' defensive rating':null}; }
+  }catch(e){}
+  return null;
+}
+/* one grade per defense, from the best source available for that league */
+function dGradeT(t,d){
+  if(!t||!d) return null;
+  if(t.m&&t.m.n) return {g:dGrade(t.m.rank,t.m.n),rank:t.m.rank,n:t.m.n,src:t.m.src,detail:t.m.detail,adj:true};
+  if(t.aRank&&d.paceOn) return {g:dGrade(t.aRank,d.n),rank:t.aRank,n:d.n,src:'pace-adjusted',detail:`${t.pa.toFixed(1)} allowed per game at ${(t.pace*100).toFixed(0)}% of league pace`,adj:true};
+  return {g:dGrade(t.rank,d.n),rank:t.rank,n:d.n,src:'points allowed',detail:`${t.pa.toFixed(1)} allowed per game`,adj:false};
+}
 /* opponent defense: points (runs) allowed per game from ESPN standings */
 async function defense(lg){
-  S.def=S.def||{}; const c=S.def[lg]; if(c&&c.v===2&&Date.now()-c.t<36e5) return c;
+  S.def=S.def||{}; const c=S.def[lg]; if(c&&c.v===3&&Date.now()-c.t<36e5) return c;
   const d=await getJSON(ESPNV2+LEAGUES[lg].path+'/standings',15000);
   const teams={};
   (function walk(o){ if(!o||typeof o!=='object') return; if(Array.isArray(o)){o.forEach(walk);return;}
@@ -775,7 +792,17 @@ async function defense(lg){
   const withPf=ids.filter(i=>teams[i].pf!=null);
   [...withPf].sort((a,b)=>teams[b].pf-teams[a].pf).forEach((id,i)=>{teams[id].oRank=i+1;});
   [...withPf].sort((a,b)=>(teams[b].pf-teams[b].pa)-(teams[a].pf-teams[a].pa)).forEach((id,i)=>{teams[id].nRank=i+1;});
-  return (S.def[lg]={v:2,t:Date.now(),teams,avg,n:ids.length,nO:withPf.length});
+  /* pace: a fast team concedes more just by playing more possessions, which is not defense.
+     Divide points allowed by the team's own scoring environment relative to the league. */
+  const tot=withPf.length?withPf.reduce((s,i)=>s+teams[i].pf+teams[i].pa,0)/withPf.length:null;
+  ids.forEach(i=>{ const t=teams[i];
+    t.pace=(tot&&t.pf!=null)?((t.pf+t.pa)/tot):1;
+    t.paAdj=t.pace>0?t.pa/t.pace:t.pa; });
+  [...ids].sort((a,b)=>teams[a].paAdj-teams[b].paAdj).forEach((id,i)=>{teams[id].aRank=i+1;});
+  /* the model's own opponent-adjusted defensive rating beats raw points allowed where it exists */
+  let mN=0;
+  ids.forEach(i=>{ const m=modelDef(lg,i,teams[i]); if(m){ teams[i].m=m; mN++; } });
+  return (S.def[lg]={v:3,t:Date.now(),teams,avg,n:ids.length,nO:withPf.length,paceOn:!!tot,mN});
 }
 /* opponent-weighted season averages for the top players inside game details */
 S.wav={};
@@ -843,7 +870,7 @@ function rankHTML(g){
 }
 function scoreRankHTML(g){
   const lg=S.league; const d=S.def&&S.def[lg];
-  if(!d||d.v!==2){ if(!S.defLoading){ S.defLoading=true; defense(lg).then(()=>{ S.defLoading=false; S.open.forEach(id=>repaint(id)); }).catch(()=>{ S.defLoading=false; S.defFail=lg; }); }
+  if(!d||d.v!==3){ if(!S.defLoading){ S.defLoading=true; defense(lg).then(()=>{ S.defLoading=false; S.open.forEach(id=>repaint(id)); }).catch(()=>{ S.defLoading=false; S.defFail=lg; }); }
     return S.defFail===lg?'':'<div><h4>Team rankings</h4><p class="muted">Loading…</p></div>'; }
   const A=d.teams[g.away.id], H=d.teams[g.home.id];
   if(!A&&!H) return '';
@@ -1757,6 +1784,7 @@ async function loadProps(){
   const my=++pSeq; P.busy=true; P.err=null; P.ctx=null; renderProps();
   const L=LEAGUES[P.lg]; const [sport,league]=L.path.split('/');
   const base=WEBAPI+'common/v3/sports/'+sport+'/'+league+'/athletes/'+P.id;
+  if(!S.nflRanks||!S.cbbRanks){ try{ await loadData(); }catch(e){} }
   const [info,glr,dfr]=await Promise.allSettled([getJSON(base,12000),getJSON(base+'/gamelog',16000),defense(P.lg)]);
   if(my!==pSeq||S.league!=='props') return;
   const a=(info.status==='fulfilled'&&(info.value.athlete||info.value))||{};
@@ -1826,14 +1854,14 @@ function propMini(col,active){
   const sub=!h.n?'no games':(h.pct==null?`avg \u00b7 L5 ${l5.avg!=null?l5.avg.toFixed(1):'\u2014'}`:`${h.o} of ${h.n} \u00b7 avg ${h.avg.toFixed(1)}`);
   const c=S.props.ctx;
   const og=c&&c.next&&c.next.opp&&c.def?c.def.teams[c.next.opp.id]:null;
-  const ogr=og?dGrade(og.rank,c.def.n):null;
+  const G=og?dGradeT(og,c.def):null, ogr=G&&G.g;
   let matchup='';
-  if(og){
-    const band=vals.filter(x=>{const t=c.opp(x.r); return t&&dGrade(t.rank,c.def.n)===ogr;});
+  if(G){
+    const band=vals.filter(x=>{const t=c.opp(x.r); const q=dGradeT(t,c.def); return q&&q.g===ogr;});
     const bh=propHit(band,ln);
     const gc='AB'.includes(ogr)?'bad':'DF'.includes(ogr)?'good':'';
     const tail=!bh.n?`no grade-${ogr} games yet`:(bh.pct==null?`${bh.avg.toFixed(1)} avg in ${bh.n}`:`${bh.o} of ${bh.n} over`);
-    matchup=`<div class="mu" title="${esc((c.next.opp.name||c.next.opp.abbr)+' allow '+og.pa.toFixed(1)+' per game, #'+og.rank+' of '+c.def.n+'. Grade A = toughest 20%, F = easiest 20%. His '+col.l+' vs grade-'+ogr+' defenses: '+tail+'.')}"><span>${c.next.home?'vs':'@'} ${esc(c.next.opp.abbr||c.next.opp.name)} <b class="${gc}">${ogr}</b> <span class="muted">#${og.rank}</span></span><span class="muted">${esc(tail)}</span></div>`;
+    matchup=`<div class="mu" title="${esc((c.next.opp.name||c.next.opp.abbr)+': #'+G.rank+' of '+G.n+' by '+G.src+(G.detail?' ('+G.detail+')':'')+'. A = toughest 20%, F = easiest 20%. His '+col.l+' vs grade-'+ogr+' defenses: '+tail+'.')}"><span>${c.next.home?'vs':'@'} ${esc(c.next.opp.abbr||c.next.opp.name)} <b class="${gc}">${ogr}</b> <span class="muted">#${G.rank}</span></span><span class="muted">${esc(tail)}</span></div>`;
   }
   return `<div class="pmc${active?' on':''}"><button class="pmbtn" type="button" data-ppstat="${col.i}" style="all:unset;cursor:pointer;display:grid;gap:4px"><span class="nm">${esc(col.l)}</span><span class="big ${cls}">${big}</span><span class="sm">${esc(sub)}</span></button><div class="spark">${bars}</div>${matchup}<input type="number" step="0.5" inputmode="decimal" placeholder="line" value="${esc(propLineOf(col.i))}" data-ppml="${col.i}" aria-label="${esc(col.l)} line"></div>`;
 }
@@ -1861,8 +1889,8 @@ function renderProps(){
   const i=P.stat, lab=(c.num.find(x=>x.i===i)||{l:''}).l;
   const vals=propVals(i);
   const og=c.next&&c.next.opp&&c.def?c.def.teams[c.next.opp.id]:null;
-  const ogr=og?dGrade(og.rank,c.def.n):null;
-  const gradeOf=r=>{const t=c.opp(r); return t?dGrade(t.rank,c.def.n):null;};
+  const G=og?dGradeT(og,c.def):null, ogr=G&&G.g;
+  const gradeOf=r=>{const q=dGradeT(c.opp(r),c.def); return q&&q.g;};
 
   /* header */
   const injTxt=c.inj?(c.inj.status||val(c.inj,'type','description')||''):'';
@@ -1870,7 +1898,7 @@ function renderProps(){
     <p class="sub" style="margin:2px 0 0">${esc([c.pos,c.team,HLG[P.lg]].filter(Boolean).join(' · '))}${injTxt?` · <span class="st-out">${esc(injTxt)}</span>`:''}</p></div></div>`;
   if(c.next){
     const when=c.next.state==='in'?'LIVE now':(c.next.t?new Date(c.next.t).toLocaleString([], {weekday:'short',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'}):'next game');
-    out+=`<p class="sub" style="margin:0">Next: <b>${c.next.home?'vs':'@'} ${esc(c.next.opp.name||c.next.opp.abbr)}</b> · ${esc(when)}${og?` · their defense allows <b>${og.pa.toFixed(1)}</b>/game, <b class="${'AB'.includes(ogr)?'bad':'DF'.includes(ogr)?'good':''}">#${og.rank} of ${c.def.n}</b> (grade ${ogr})`:''}</p>`;
+    out+=`<p class="sub" style="margin:0">Next: <b>${c.next.home?'vs':'@'} ${esc(c.next.opp.name||c.next.opp.abbr)}</b> · ${esc(when)}${G?` · their defense grades <b class="${'AB'.includes(ogr)?'bad':'DF'.includes(ogr)?'good':''}">${ogr}</b>, <b>#${G.rank} of ${G.n}</b> <span class="muted">(${esc(G.src)}${G.detail?' · '+esc(G.detail):''})</span>`:''}</p>`;
   }
   out+=`<p style="margin:0"><button class="linkbtn" type="button" data-ppback="1">← Another player</button> · <a href="https://www.espn.com/${L.web}/player/_/id/${esc(P.id)}" target="_blank" rel="noopener">ESPN profile</a></p>`;
 
@@ -1903,8 +1931,8 @@ function propPaint(){
   const lab=(c.num.find(x=>x.i===i)||{l:''}).l;
   const vals=propVals(i);
   const og=c.next&&c.next.opp&&c.def?c.def.teams[c.next.opp.id]:null;
-  const ogr=og?dGrade(og.rank,c.def.n):null;
-  const gradeOf=r=>{const t=c.opp(r); return t?dGrade(t.rank,c.def.n):null;};
+  const G=og?dGradeT(og,c.def):null, ogr=G&&G.g;
+  const gradeOf=r=>{const q=dGradeT(c.opp(r),c.def); return q&&q.g;};
   const act=document.activeElement, actSel=act&&act.tagName==='INPUT'?[act.id,act.dataset.ppml,act.selectionStart]:null;
   const top=$('ppTop');
   if(top) top.innerHTML=(P.top&&P.top.length>1)?`<h4 style="margin:4px 0 6px">Key stats${esc(c.pos?' \u00b7 '+c.pos:'')}</h4><div class="pmini">${P.top.map(col=>propMini(col,col.i===i)).join('')}</div>`:'';
@@ -1935,16 +1963,33 @@ function propPaint(){
     'Each game counts more the tougher that opponent’s defense: weight = league average allowed ÷ that opponent’s average allowed.')}
     ${propTile('Last 5 trend',(l5.avg!=null&&seas.avg!=null?((l5.avg-seas.avg>=0?'+':'')+(l5.avg-seas.avg).toFixed(1)):'—'),'vs season average',l5.avg!=null&&seas.avg!=null?(l5.avg>=seas.avg?'good':'bad'):'')}
     ${isNaN(line)?'':propTile('Edge vs line',((wavg-line>=0?'+':'')+(wavg-line).toFixed(1)),'opp-weighted avg − line',wavg>line?'good':'bad')}
-    ${og?propTile('Next D rank','#'+og.rank,`of ${c.def.n} · grade ${ogr} · ${og.pa.toFixed(1)} allowed`,'AB'.includes(ogr)?'bad':'DF'.includes(ogr)?'good':''):''}</div>`;
+    ${G?propTile('Next D rank','#'+G.rank,`of ${G.n} · grade ${ogr} · ${esc(G.src)}`,'AB'.includes(ogr)?'bad':'DF'.includes(ogr)?'good':'',G.detail||''):''}</div>`;
   if(!isNaN(line)) out+=`<p class="sub" style="margin:8px 0 0">${seas.o} over, ${seas.u} under${seas.p?`, ${seas.p} push`:''} at ${line} this season. Opponent-weighted average ${wavg.toFixed(1)} vs a straight ${seas.avg.toFixed(1)} — the weighted number is the one to trust when the schedule has been lopsided.</p>`;
+
+  /* how much the defense grade actually moves this stat for this player */
+  const tgh=vals.filter(x=>'AB'.includes(gradeOf(x.r)||'-')), sft=vals.filter(x=>'DF'.includes(gradeOf(x.r)||'-'));
+  if(tgh.length>=2&&sft.length>=2){
+    const m=xs=>xs.reduce((s,x)=>s+x.v,0)/xs.length;
+    const ta=m(tgh), sa=m(sft), gap=sa-ta;
+    const all=vals.map(x=>x.v), mu=m(vals);
+    const sd=Math.sqrt(all.reduce((s,v)=>s+(v-mu)*(v-mu),0)/all.length);
+    const rel=sd>0?Math.abs(gap)/sd:0;
+    const verdict=gap<0?`runs backwards at this sample \u2014 he has actually put up more ${lab} against the tougher defenses, which is noise rather than a read`
+      :rel<0.25?`barely moves ${lab} for him \u2014 at this sample the grade is close to noise for this stat`
+      :rel<0.6?`nudges ${lab} but doesn\u2019t decide it`
+      :`moves ${lab} enough to matter`;
+    out+=`<p class="sub" style="margin:8px 0 0"><b>Defense sensitivity:</b> ${esc(lab)} averages <b>${sa.toFixed(1)}</b> against soft defenses (D\u2013F, ${sft.length} game${sft.length===1?'':'s'}) and <b>${ta.toFixed(1)}</b> against tough ones (A\u2013B, ${tgh.length}) \u2014 a ${Math.abs(gap).toFixed(1)} gap against a game-to-game swing of \u00b1${sd.toFixed(1)}. The grade ${verdict}.</p>`;
+  } else if(c.def){
+    out+=`<p class="sub" style="margin:8px 0 0"><b>Defense sensitivity:</b> not enough games yet against both tough and soft defenses to say whether the grade moves ${esc(lab)} for him.</p>`;
+  }
 
   /* game log with defense grades */
   out+=`<h4 style="margin:14px 0 6px">Game log · opponent defense grade</h4><div class="tbl" style="max-height:360px;overflow:auto"><table class="btable"><thead><tr><th>Game</th><th>Opp D</th>${c.labels.map(l=>`<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>${c.rows.map(r=>{
-    const t=c.opp(r), g=t?dGrade(t.rank,c.def.n):null, dt=r.date?new Date(r.date).toLocaleDateString([], {month:'numeric',day:'numeric'}):'';
+    const t=c.opp(r), q=dGradeT(t,c.def), g=q&&q.g, dt=r.date?new Date(r.date).toLocaleDateString([], {month:'numeric',day:'numeric'}):'';
     const v=i==null?null:parseFloat(String(r.stats[i]==null?'':r.stats[i]).replace(/,/g,''));
     const mark=isNaN(line)||isNaN(v)?'':(v>line?'good':v<line?'bad':'');
-    return `<tr><td>${esc([dt,[r.atVs,r.opp&&r.opp.abbreviation].filter(Boolean).join(' '),[r.res,r.score].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</td><td${t?` title="Allows ${t.pa.toFixed(1)}/game, #${t.rank} of ${c.def.n}"`:''}>${t?`<b class="${'AB'.includes(g)?'good':'DF'.includes(g)?'bad':''}">${g}</b> <span class="muted">#${t.rank}</span>`:'—'}</td>${c.labels.map((l,k)=>`<td${k===i&&mark?` class="${mark}"`:''}>${esc(r.stats[k]==null?'':r.stats[k])}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
-    <p class="sub" style="margin:6px 0 0">Defense grade is by points (runs) allowed per game from ESPN standings: A = toughest 20%, F = easiest 20%.</p>`;
+    return `<tr><td>${esc([dt,[r.atVs,r.opp&&r.opp.abbreviation].filter(Boolean).join(' '),[r.res,r.score].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</td><td${q?` title="#${q.rank} of ${q.n} by ${esc(q.src)}${q.detail?' · '+esc(q.detail):''}"`:''}>${q?`<b class="${'AB'.includes(g)?'good':'DF'.includes(g)?'bad':''}">${g}</b> <span class="muted">#${q.rank}</span>`:'—'}</td>${c.labels.map((l,k)=>`<td${k===i&&mark?` class="${mark}"`:''}>${esc(r.stats[k]==null?'':r.stats[k])}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
+    <p class="sub" style="margin:6px 0 0">Grade source: ${esc(c.def&&c.def.mN?`your model\u2019s opponent-adjusted defensive rating for ${c.def.mN} of ${c.def.n} teams, ESPN standings for the rest`:(c.def&&c.def.paceOn?'ESPN standings, points allowed per game divided by each team\u2019s own pace':'ESPN standings, points allowed per game'))}. A = toughest 20%, F = easiest 20%. It rates a defense overall, not against this one stat \u2014 the sensitivity line above says how much it has actually moved this number.</p>`;
   host.innerHTML=out;
   if(actSel&&actSel[1]!=null){ const el=document.querySelector(`[data-ppml="${actSel[1]}"]`); if(el){ el.focus(); try{ el.setSelectionRange(actSel[2],actSel[2]); }catch(e){} } }
   if(vals.length) propChart({labels:c.labels,rows:c.rows,def:c.def,opp:c.opp,w:c.w},i,vals,line,wavg,lab,'ppChart');
