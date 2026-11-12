@@ -178,9 +178,9 @@ a{color:var(--home)}
 .g-top .g-tr>span:first-child:not(.mv-lg){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 /* ---- fun: your picks, sweat, alerts, recap, slip ---- */
 .pickdot{border:1.5px dashed var(--line);background:transparent;color:var(--muted);border-radius:999px;width:30px;height:30px;font:700 15px/1 var(--f-body);display:grid;place-items:center;padding:0}
-.pickdot.on{border-style:solid;border-color:var(--home);background:var(--home);color:#fff}
+.pickdot.on{border-style:solid;border-color:var(--home);background:var(--home);color:var(--panel)}
 .trow.mine .tname b{text-decoration:underline;text-decoration-color:var(--home);text-underline-offset:3px}
-.mypk{font:700 10px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;background:var(--home);color:#fff;border-radius:999px;padding:3px 7px;margin-left:6px;white-space:nowrap}
+.mypk{font:700 10px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;background:var(--home);color:var(--panel);border-radius:999px;padding:3px 7px;margin-left:6px;white-space:nowrap}
 .mypk.W{background:var(--good)}.mypk.L{background:var(--bad)}
 .chip.mline{background:var(--panel2);border-style:dashed}
 .chip.mline.ml-big{border-color:var(--accent);background:var(--accent-soft)}
@@ -205,8 +205,9 @@ a{color:var(--home)}
 .stk{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:0}
 .stk .k{font:600 10px/1 var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .stk .v{font:700 19px/1.1 var(--f-display);margin-top:3px}
-.stk.hot{border-color:var(--bad);background:var(--bad-soft)}
-.stk.cold{border-color:var(--home);background:#eef3fb}
+.stk .v{color:var(--ink)}
+.stk.hot{border-color:var(--good);background:var(--good-soft)} .stk.hot .v{color:var(--good)}
+.stk.cold{border-color:var(--bad);background:var(--bad-soft)} .stk.cold .v{color:var(--bad)}
 .heat{font-size:11px;margin-left:3px}
 .g-acts{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 10px}
 .slipbtn{font:600 11.5px/1 var(--f-body);padding:5px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);white-space:nowrap}
@@ -398,7 +399,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-12-slip2';
+const BUILD='2026-11-12-contrast1';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
