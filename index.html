@@ -386,7 +386,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-11-dsplit2';
+const BUILD='2026-11-11-dsplit3';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -769,14 +769,20 @@ function modelDef(lg,id,t){
 function splitCat(lg,pos,label){
   const L=String(label||'').toUpperCase(), p=String(pos||'').toUpperCase();
   if(lg==='nba'||lg==='cbb') return ({PTS:'pts',REB:'reb',AST:'ast','3PT':'tpm',FG:'fgm',FT:'ftm',STL:'stl',BLK:'blk',TO:'stl'})[L]||null;
-  if(lg==='nfl'){
+  if(lg==='mlb'){
+    const pit=/PITCH|^P$|^SP$|^RP$/.test(p);
+    return pit?({H:'off_hits',R:'off_runs',ER:'off_runs',HR:'off_hr',BB:'off_bb',K:'off_k',SO:'off_k'})[L]||null
+              :({H:'hits_allowed',HR:'hr_allowed',R:'runs_allowed',RBI:'runs_allowed',BB:'bb_allowed',K:'k_per9',SO:'k_per9'})[L]||null;
+  }
+  if(lg==='nfl'||lg==='cfb'){
     const rush=/RUNNING ?BACK|FULLBACK|^RB$|^FB$/.test(p);
     if(L==='YDS') return rush?'rush_yds':'pass_yds';
     if(L==='TD') return rush?'rush_td':'pass_td';
-    if(L==='REC'||L==='CMP') return 'cmp';
+    if(L==='REC') return lg==='cfb'?'rec':'cmp';
+    if(L==='CMP') return 'cmp';
     if(L==='CAR') return 'rush_yds';
-    if(L==='SACK') return 'sack';
-    if(L==='INT'||L==='FUM') return 'takeaway';
+    if(lg==='nfl'&&L==='SACK') return 'sack';
+    if(lg==='nfl'&&(L==='INT'||L==='FUM')) return 'takeaway';
   }
   return null;
 }
@@ -790,7 +796,7 @@ function statGrade(lg,t,pos,label){
   const r=e[cat].rank, n=D.n;
   const f=x=>Math.abs(x)>=10?(+x).toFixed(1):(+x).toFixed(2);
   return {g:dGrade(meta.lowerBetter?r:(n-r+1),n),rank:r,n,src:(HLG[lg]||String(lg).toUpperCase())+' model · '+meta.label,
-    detail:`${f(e[cat].v)} vs a league average of ${f(meta.lg)}, over ${e.g} games`,adj:true,stat:true,cat};
+    detail:`${f(e[cat].v)} vs a league average of ${f(meta.lg)}, over ${e.g} games`+(D.adjusted===false?' \u00b7 season rates, not schedule-adjusted':''),adj:true,stat:true,cat};
 }
 /* one grade per defense, from the best source available for that league */
 function dGradeT(t,d){
@@ -1172,9 +1178,9 @@ function renderHistory(){
 /* ---------- published data files (kept current by the scheduled publish task) ---------- */
 async function loadData(){
   const get=u=>fetch(u+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
-  const [p,hj,nr,br,cr,kr,nd,kd,bd]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json'),get('data/nba_ranks.json'),get('data/cfb_ranks.json'),get('data/cbb_ranks.json'),get('data/nfl_dsplits.json'),get('data/cbb_dsplits.json'),get('data/nba_dsplits.json')]);
+  const [p,hj,nr,br,cr,kr,nd,kd,bd,fd,md]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json'),get('data/nba_ranks.json'),get('data/cfb_ranks.json'),get('data/cbb_ranks.json'),get('data/nfl_dsplits.json'),get('data/cbb_dsplits.json'),get('data/nba_dsplits.json'),get('data/cfb_dsplits.json'),get('data/mlb_dsplits.json')]);
   if(nr&&nr.teams) S.nflRanks=nr; if(br&&br.teams) S.nbaRanks=br; if(cr&&cr.teams) S.cfbRanks=cr; if(kr&&kr.teams) S.cbbRanks=kr;
-  S.dsp=S.dsp||{}; if(nd&&nd.teams) S.dsp.nfl=nd; if(kd&&kd.teams) S.dsp.cbb=kd; if(bd&&bd.teams) S.dsp.nba=bd;
+  S.dsp=S.dsp||{}; if(nd&&nd.teams) S.dsp.nfl=nd; if(kd&&kd.teams) S.dsp.cbb=kd; if(bd&&bd.teams) S.dsp.nba=bd; if(fd&&fd.teams) S.dsp.cfb=fd; if(md&&md.teams) S.dsp.mlb=md;
   if(p&&p.leagues){ window.MODEL_PICKS=Object.assign({},window.MODEL_PICKS||{},p.leagues); }
   if(hj&&Array.isArray(hj.rows)&&hj.rows.length){ S.histJson=hj; S.hRows=null; S._heatRows=null; }
   const u=(hj&&hj.updated)||(p&&p.updated); if(u){ try{ S.dataUpdated=new Date(u).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){} }
