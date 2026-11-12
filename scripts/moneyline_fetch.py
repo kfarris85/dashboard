@@ -16,7 +16,7 @@ only covers the handful of games that get a real sportsbook line each day.
 usage: python3 -I moneyline_fetch.py <picks.json> <out.json>
 env:   MONEYLINE_API_KEY (required)
 """
-import sys, os, json, urllib.request, urllib.parse
+import sys, os, re, json, urllib.request, urllib.parse
 from datetime import datetime, timezone, timedelta
 
 API = 'https://mlapi.bet'
@@ -30,6 +30,29 @@ MAX_GAMES = 3
 BUDGET = 35  # hard credit ceiling for this run; stop paid calls once hit
 
 LG_MAP = {'nfl': 'nfl', 'cfb': 'ncaa_football', 'nba': 'nba', 'cbb': 'ncaa_basketball', 'mlb': 'mlb'}
+
+# Standard pro-league abbreviations -> a unique mascot word, used to match our
+# picks.json abbreviations against MoneyLine's full team names (e.g. "Los
+# Angeles Clippers"). Mascots are unique within a league even when cities
+# aren't (LA, NY, Chicago each host two teams), so they're a safer match key
+# than city names.
+NBA_NAMES = {
+    'ATL': 'Hawks', 'BKN': 'Nets', 'BOS': 'Celtics', 'CHA': 'Hornets', 'CHI': 'Bulls',
+    'CLE': 'Cavaliers', 'DAL': 'Mavericks', 'DEN': 'Nuggets', 'DET': 'Pistons', 'GS': 'Warriors',
+    'HOU': 'Rockets', 'IND': 'Pacers', 'LAC': 'Clippers', 'LAL': 'Lakers', 'MEM': 'Grizzlies',
+    'MIA': 'Heat', 'MIL': 'Bucks', 'MIN': 'Timberwolves', 'NO': 'Pelicans', 'NY': 'Knicks',
+    'OKC': 'Thunder', 'ORL': 'Magic', 'PHI': '76ers', 'PHX': 'Suns', 'POR': 'Blazers',
+    'SA': 'Spurs', 'SAC': 'Kings', 'TOR': 'Raptors', 'UTAH': 'Jazz', 'WSH': 'Wizards',
+}
+MLB_NAMES = {
+    'ARI': 'Diamondbacks', 'ATL': 'Braves', 'BAL': 'Orioles', 'BOS': 'Red Sox', 'CHC': 'Cubs',
+    'CHW': 'White Sox', 'CIN': 'Reds', 'CLE': 'Guardians', 'COL': 'Rockies', 'DET': 'Tigers',
+    'HOU': 'Astros', 'KC': 'Royals', 'LAA': 'Angels', 'LAD': 'Dodgers', 'MIA': 'Marlins',
+    'MIL': 'Brewers', 'MIN': 'Twins', 'NYM': 'Mets', 'NYY': 'Yankees', 'OAK': 'Athletics',
+    'ATH': 'Athletics', 'PHI': 'Phillies', 'PIT': 'Pirates', 'SD': 'Padres', 'SEA': 'Mariners',
+    'SF': 'Giants', 'STL': 'Cardinals', 'TB': 'Rays', 'TEX': 'Rangers', 'TOR': 'Blue Jays',
+    'WSH': 'Nationals',
+}
 
 credits_spent = 0
 
@@ -65,23 +88,49 @@ def pick_games():
     return cands[:MAX_GAMES]
 
 
-_teams_cache = {}
+_cbb_names = None
 
 
-def teams_for(mlg):
-    """abbreviation (upper) -> teamId, for one league. Cached per run."""
-    if mlg not in _teams_cache:
-        amap = {}
+def cbb_name_for(abbr):
+    """ESPN cbb abbreviation -> full school name, read from the school's own
+    cbb_ranks.json (already in the repo, already has this exact crosswalk —
+    no need to pay for /v1/teams, which came back empty for this league)."""
+    global _cbb_names
+    if _cbb_names is None:
+        _cbb_names = {}
         try:
-            d = call('/v1/teams', 1, league=mlg, limit=400)
-            for t in (d.get('data') or []):
-                ab = norm_abbr(t.get('abbreviation'))
+            path = os.path.join(os.path.dirname(PICKS) or '.', 'cbb_ranks.json')
+            d = json.load(open(path))
+            for t in (d.get('teams') or {}).values():
+                ab = norm_abbr(t.get('abbr'))
                 if ab:
-                    amap[ab] = t.get('teamId')
+                    _cbb_names[ab] = t.get('team') or ''
         except Exception as e:
-            print(f'teams lookup failed {mlg}: {e}', file=sys.stderr)
-        _teams_cache[mlg] = amap
-    return _teams_cache[mlg]
+            print(f'cbb_ranks.json load failed: {e}', file=sys.stderr)
+    return _cbb_names.get(norm_abbr(abbr), abbr)
+
+
+def name_for(lg, abbr_or_name):
+    """Resolve a picks.json away/home field to a name that should appear
+    inside MoneyLine's awayTeamName/homeTeamName. nfl/cfb already store a
+    usable name (mascot or school); nba/mlb only store ESPN abbreviations,
+    so those go through a static mascot map; cbb abbreviations go through
+    the repo's own cbb_ranks.json crosswalk."""
+    if lg == 'cbb':
+        return cbb_name_for(abbr_or_name)
+    if lg == 'nba':
+        return NBA_NAMES.get(norm_abbr(abbr_or_name), abbr_or_name)
+    if lg == 'mlb':
+        return MLB_NAMES.get(norm_abbr(abbr_or_name), abbr_or_name)
+    return abbr_or_name
+
+
+def normalize(s):
+    s = (s or '').lower()
+    s = s.replace('&', ' and ')
+    s = re.sub(r'\bumass\b', 'massachusetts', s)
+    s = re.sub(r'[^a-z0-9]+', ' ', s)
+    return re.sub(r'\s+', ' ', s).strip()
 
 
 _events_cache = {}
@@ -99,19 +148,23 @@ def events_for(mlg, date):
     return _events_cache[k]
 
 
-def match_event(evlist, away_id, home_id):
-    """Match on MoneyLine team ids resolved from our abbreviations — far more
-    reliable than fuzzy name matching, especially for college team names that
-    different providers abbreviate differently."""
-    if not away_id or not home_id:
+def _contains(short, full):
+    s, f = normalize(short), normalize(full)
+    return bool(s) and bool(f) and s in f
+
+
+def match_event(evlist, away_name, home_name):
+    """Match on team NAMES (not MoneyLine teamIds — /v1/teams came back
+    empty for ncaa_basketball, and event-level awayTeamName/homeTeamName are
+    already present in the /v1/events response we're paying for anyway)."""
+    if not away_name or not home_name:
         return None
     for e in evlist:
-        if e.get('awayTeamId') == away_id and e.get('homeTeamId') == home_id:
+        if _contains(away_name, e.get('awayTeamName', '')) and _contains(home_name, e.get('homeTeamName', '')):
             return e
-    # some events list only one side populated, or home/away swapped upstream
+    # home/away can come in swapped from upstream
     for e in evlist:
-        ids = {e.get('awayTeamId'), e.get('homeTeamId')}
-        if away_id in ids and home_id in ids:
+        if _contains(away_name, e.get('homeTeamName', '')) and _contains(home_name, e.get('awayTeamName', '')):
             return e
     return None
 
@@ -130,20 +183,15 @@ def main():
     for best, edge, lg, mlg, g in pick_games():
         date = g.get('date')
         rec = {'lg': lg, 'away': g.get('away'), 'home': g.get('home'), 'date': date, 'matched': False}
-        tmap = teams_for(mlg)
-        away_id = tmap.get(norm_abbr(g.get('away')))
-        home_id = tmap.get(norm_abbr(g.get('home')))
+        away_name = name_for(lg, g.get('away'))
+        home_name = name_for(lg, g.get('home'))
         evlist = events_for(mlg, date)
-        print(f'DEBUG {mlg} {date}: teams={len(tmap)} sample={list(tmap.items())[:5]} '
-              f'away={g.get("away")}->{away_id} home={g.get("home")}->{home_id} '
-              f'events={len(evlist)} sample_ev={[{"a":e.get("awayTeamId"),"h":e.get("homeTeamId"),"an":e.get("awayTeamName"),"hn":e.get("homeTeamName")} for e in evlist[:3]]}',
-              file=sys.stderr)
-        ev = match_event(evlist, away_id, home_id)
+        ev = match_event(evlist, away_name, home_name)
         if not ev:
             # the game can fall on the next UTC calendar day for late local kickoffs
             try:
                 nd = (datetime.fromisoformat(date) + timedelta(days=1)).date().isoformat()
-                ev = match_event(events_for(mlg, nd), away_id, home_id)
+                ev = match_event(events_for(mlg, nd), away_name, home_name)
             except Exception:
                 pass
         if ev:
