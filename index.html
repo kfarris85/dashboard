@@ -386,7 +386,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-11-props4';
+const BUILD='2026-11-11-dsplit1';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -765,6 +765,33 @@ function modelDef(lg,id,t){
   }catch(e){}
   return null;
 }
+/* which published defensive split answers THIS stat for THIS player */
+function splitCat(lg,pos,label){
+  const L=String(label||'').toUpperCase(), p=String(pos||'').toUpperCase();
+  if(lg==='nba'||lg==='cbb') return ({PTS:'pts',REB:'reb',AST:'ast','3PT':'tpm',FG:'fgm',FT:'ftm',STL:'stl',BLK:'blk',TO:'stl'})[L]||null;
+  if(lg==='nfl'){
+    const rush=/RUNNING ?BACK|FULLBACK|^RB$|^FB$/.test(p);
+    if(L==='YDS') return rush?'rush_yds':'pass_yds';
+    if(L==='TD') return rush?'rush_td':'pass_td';
+    if(L==='REC'||L==='CMP') return 'cmp';
+    if(L==='CAR') return 'rush_yds';
+    if(L==='SACK') return 'sack';
+    if(L==='INT'||L==='FUM') return 'takeaway';
+  }
+  return null;
+}
+/* the grade for one stat against one defense, from the model's own per-category split */
+function statGrade(lg,t,pos,label){
+  const D=S.dsp&&S.dsp[lg]; if(!D||!t) return null;
+  const cat=splitCat(lg,pos,label); if(!cat) return null;
+  const key=lg==='nfl'?t.abbr:String(t.id||'');
+  const e=D.teams[key]; const meta=D.cats&&D.cats[cat];
+  if(!e||!e[cat]||!meta) return null;
+  const r=e[cat].rank, n=D.n;
+  const f=x=>Math.abs(x)>=10?(+x).toFixed(1):(+x).toFixed(2);
+  return {g:dGrade(meta.lowerBetter?r:(n-r+1),n),rank:r,n,src:(lg==='nfl'?'NFL':'CBB')+' model · '+meta.label,
+    detail:`${f(e[cat].v)} vs a league average of ${f(meta.lg)}, over ${e.g} games`,adj:true,stat:true,cat};
+}
 /* one grade per defense, from the best source available for that league */
 function dGradeT(t,d){
   if(!t||!d) return null;
@@ -783,7 +810,7 @@ async function defense(lg){
       const gp=s.gamesPlayed||((s.wins||0)+(s.losses||0)+(s.ties||0)+(s.otLosses||0));
       let pa=s.avgPointsAgainst; if(!(pa>0)&&s.pointsAgainst>0&&gp>0) pa=s.pointsAgainst/gp;
       let pf=s.avgPointsFor; if(!(pf>0)&&s.pointsFor>0&&gp>0) pf=s.pointsFor/gp;
-      if(pa>0&&!teams[o.team.id]) teams[o.team.id]={pa,pf:pf>0?pf:null,gp:gp||null,abbr:o.team.abbreviation||'',name:o.team.displayName||''};
+      if(pa>0&&!teams[o.team.id]) teams[o.team.id]={id:String(o.team.id),pa,pf:pf>0?pf:null,gp:gp||null,abbr:o.team.abbreviation||'',name:o.team.displayName||''};
       return; }
     for(const k in o) if(o[k]&&typeof o[k]==='object') walk(o[k]); })(d);
   const ids=Object.keys(teams); if(!ids.length) throw new Error('no standings data');
@@ -1145,8 +1172,9 @@ function renderHistory(){
 /* ---------- published data files (kept current by the scheduled publish task) ---------- */
 async function loadData(){
   const get=u=>fetch(u+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
-  const [p,hj,nr,br,cr,kr]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json'),get('data/nba_ranks.json'),get('data/cfb_ranks.json'),get('data/cbb_ranks.json')]);
+  const [p,hj,nr,br,cr,kr,nd,kd,bd]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json'),get('data/nba_ranks.json'),get('data/cfb_ranks.json'),get('data/cbb_ranks.json'),get('data/nfl_dsplits.json'),get('data/cbb_dsplits.json'),get('data/nba_dsplits.json')]);
   if(nr&&nr.teams) S.nflRanks=nr; if(br&&br.teams) S.nbaRanks=br; if(cr&&cr.teams) S.cfbRanks=cr; if(kr&&kr.teams) S.cbbRanks=kr;
+  S.dsp=S.dsp||{}; if(nd&&nd.teams) S.dsp.nfl=nd; if(kd&&kd.teams) S.dsp.cbb=kd; if(bd&&bd.teams) S.dsp.nba=bd;
   if(p&&p.leagues){ window.MODEL_PICKS=Object.assign({},window.MODEL_PICKS||{},p.leagues); }
   if(hj&&Array.isArray(hj.rows)&&hj.rows.length){ S.histJson=hj; S.hRows=null; S._heatRows=null; }
   const u=(hj&&hj.updated)||(p&&p.updated); if(u){ try{ S.dataUpdated=new Date(u).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){} }
@@ -1854,16 +1882,22 @@ function propMini(col,active){
   const sub=!h.n?'no games':(h.pct==null?`avg \u00b7 L5 ${l5.avg!=null?l5.avg.toFixed(1):'\u2014'}`:`${h.o} of ${h.n} \u00b7 avg ${h.avg.toFixed(1)}`);
   const c=S.props.ctx;
   const og=c&&c.next&&c.next.opp&&c.def?c.def.teams[c.next.opp.id]:null;
-  const G=og?dGradeT(og,c.def):null, ogr=G&&G.g;
+  const G=og?gradeFor(og,col.l):null, ogr=G&&G.g;
   let matchup='';
   if(G){
-    const band=vals.filter(x=>{const t=c.opp(x.r); const q=dGradeT(t,c.def); return q&&q.g===ogr;});
+    const band=vals.filter(x=>{const q=gradeFor(c.opp(x.r),col.l); return q&&q.g===ogr;});
     const bh=propHit(band,ln);
     const gc='AB'.includes(ogr)?'bad':'DF'.includes(ogr)?'good':'';
     const tail=!bh.n?`no grade-${ogr} games yet`:(bh.pct==null?`${bh.avg.toFixed(1)} avg in ${bh.n}`:`${bh.o} of ${bh.n} over`);
     matchup=`<div class="mu" title="${esc((c.next.opp.name||c.next.opp.abbr)+': #'+G.rank+' of '+G.n+' by '+G.src+(G.detail?' ('+G.detail+')':'')+'. A = toughest 20%, F = easiest 20%. His '+col.l+' vs grade-'+ogr+' defenses: '+tail+'.')}"><span>${c.next.home?'vs':'@'} ${esc(c.next.opp.abbr||c.next.opp.name)} <b class="${gc}">${ogr}</b> <span class="muted">#${G.rank}</span></span><span class="muted">${esc(tail)}</span></div>`;
   }
   return `<div class="pmc${active?' on':''}"><button class="pmbtn" type="button" data-ppstat="${col.i}" style="all:unset;cursor:pointer;display:grid;gap:4px"><span class="nm">${esc(col.l)}</span><span class="big ${cls}">${big}</span><span class="sm">${esc(sub)}</span></button><div class="spark">${bars}</div>${matchup}<input type="number" step="0.5" inputmode="decimal" placeholder="line" value="${esc(propLineOf(col.i))}" data-ppml="${col.i}" aria-label="${esc(col.l)} line"></div>`;
+}
+
+/* the grade to show for a given stat: the per-category split when the model has one */
+function gradeFor(t,label){
+  const P=S.props, c=P.ctx; if(!t||!c) return null;
+  return statGrade(P.lg,t,c.pos,label)||dGradeT(t,c.def);
 }
 
 function renderProps(){
@@ -1889,8 +1923,8 @@ function renderProps(){
   const i=P.stat, lab=(c.num.find(x=>x.i===i)||{l:''}).l;
   const vals=propVals(i);
   const og=c.next&&c.next.opp&&c.def?c.def.teams[c.next.opp.id]:null;
-  const G=og?dGradeT(og,c.def):null, ogr=G&&G.g;
-  const gradeOf=r=>{const q=dGradeT(c.opp(r),c.def); return q&&q.g;};
+  const G=og?gradeFor(og,lab):null, ogr=G&&G.g;
+  const gradeOf=r=>{const q=gradeFor(c.opp(r),lab); return q&&q.g;};
 
   /* header */
   const injTxt=c.inj?(c.inj.status||val(c.inj,'type','description')||''):'';
@@ -1931,8 +1965,8 @@ function propPaint(){
   const lab=(c.num.find(x=>x.i===i)||{l:''}).l;
   const vals=propVals(i);
   const og=c.next&&c.next.opp&&c.def?c.def.teams[c.next.opp.id]:null;
-  const G=og?dGradeT(og,c.def):null, ogr=G&&G.g;
-  const gradeOf=r=>{const q=dGradeT(c.opp(r),c.def); return q&&q.g;};
+  const G=og?gradeFor(og,lab):null, ogr=G&&G.g;
+  const gradeOf=r=>{const q=gradeFor(c.opp(r),lab); return q&&q.g;};
   const act=document.activeElement, actSel=act&&act.tagName==='INPUT'?[act.id,act.dataset.ppml,act.selectionStart]:null;
   const top=$('ppTop');
   if(top) top.innerHTML=(P.top&&P.top.length>1)?`<h4 style="margin:4px 0 6px">Key stats${esc(c.pos?' \u00b7 '+c.pos:'')}</h4><div class="pmini">${P.top.map(col=>propMini(col,col.i===i)).join('')}</div>`:'';
@@ -1985,11 +2019,11 @@ function propPaint(){
 
   /* game log with defense grades */
   out+=`<h4 style="margin:14px 0 6px">Game log · opponent defense grade</h4><div class="tbl" style="max-height:360px;overflow:auto"><table class="btable"><thead><tr><th>Game</th><th>Opp D</th>${c.labels.map(l=>`<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>${c.rows.map(r=>{
-    const t=c.opp(r), q=dGradeT(t,c.def), g=q&&q.g, dt=r.date?new Date(r.date).toLocaleDateString([], {month:'numeric',day:'numeric'}):'';
+    const t=c.opp(r), q=gradeFor(t,lab), g=q&&q.g, dt=r.date?new Date(r.date).toLocaleDateString([], {month:'numeric',day:'numeric'}):'';
     const v=i==null?null:parseFloat(String(r.stats[i]==null?'':r.stats[i]).replace(/,/g,''));
     const mark=isNaN(line)||isNaN(v)?'':(v>line?'good':v<line?'bad':'');
     return `<tr><td>${esc([dt,[r.atVs,r.opp&&r.opp.abbreviation].filter(Boolean).join(' '),[r.res,r.score].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</td><td${q?` title="#${q.rank} of ${q.n} by ${esc(q.src)}${q.detail?' · '+esc(q.detail):''}"`:''}>${q?`<b class="${'AB'.includes(g)?'good':'DF'.includes(g)?'bad':''}">${g}</b> <span class="muted">#${q.rank}</span>`:'—'}</td>${c.labels.map((l,k)=>`<td${k===i&&mark?` class="${mark}"`:''}>${esc(r.stats[k]==null?'':r.stats[k])}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
-    <p class="sub" style="margin:6px 0 0">Grade source: ${esc(c.def&&c.def.mN?`your model\u2019s opponent-adjusted defensive rating for ${c.def.mN} of ${c.def.n} teams, ESPN standings for the rest`:(c.def&&c.def.paceOn?'ESPN standings, points allowed per game divided by each team\u2019s own pace':'ESPN standings, points allowed per game'))}. A = toughest 20%, F = easiest 20%. It rates a defense overall, not against this one stat \u2014 the sensitivity line above says how much it has actually moved this number.</p>`;
+    <p class="sub" style="margin:6px 0 0">Grade source: ${G&&G.stat?esc(G.src)+' \u2014 the defense\u2019s rank in this exact category, not its overall rank':esc(c.def&&c.def.mN?`your model\u2019s opponent-adjusted defensive rating for ${c.def.mN} of ${c.def.n} teams, ESPN standings for the rest`:(c.def&&c.def.paceOn?'ESPN standings, points allowed per game divided by each team\u2019s own pace':'ESPN standings, points allowed per game'))}. A = toughest 20%, F = easiest 20%.${G&&G.stat?'':' It rates a defense overall, not against this one stat.'} The sensitivity line above says how much that grade has actually moved this number for him.</p>`;
   host.innerHTML=out;
   if(actSel&&actSel[1]!=null){ const el=document.querySelector(`[data-ppml="${actSel[1]}"]`); if(el){ el.focus(); try{ el.setSelectionRange(actSel[2],actSel[2]); }catch(e){} } }
   if(vals.length) propChart({labels:c.labels,rows:c.rows,def:c.def,opp:c.opp,w:c.w},i,vals,line,wavg,lab,'ppChart');
