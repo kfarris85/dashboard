@@ -208,13 +208,16 @@ a{color:var(--home)}
 .stk.hot{border-color:var(--bad);background:var(--bad-soft)}
 .stk.cold{border-color:var(--home);background:#eef3fb}
 .heat{font-size:11px;margin-left:3px}
-.g-acts{display:flex;gap:8px;flex-wrap:wrap;padding:0 12px 10px}
+.g-acts{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 10px}
 .slipbtn{font:600 11.5px/1 var(--f-body);padding:5px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);white-space:nowrap}
 .slipbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.slipbtn.mdl{border-style:dashed} .slipbtn .so{opacity:.75;font-weight:600}
 .slip-wrap{padding-top:14px;display:flex;flex-direction:column;gap:14px;padding-bottom:40px}
 .slip-bank{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
 .slip-bank .b{font:700 30px/1 var(--f-display);font-variant-numeric:tabular-nums}
-.leg{display:flex;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:8px 0;font-size:13px;flex-wrap:wrap}
+.leg{display:grid;gap:4px;border-top:1px solid var(--line);padding:8px 0;font-size:13px}
+.leg .lrow{display:flex;align-items:center;gap:8px}
+.leg .lrow .lo{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .leg:first-child{border-top:0}
 .leg .lp{font-weight:700}
 .leg .lo{font:600 13px var(--f-mono);white-space:nowrap}
@@ -395,7 +398,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-12-slip1';
+const BUILD='2026-11-12-slip2';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -1576,7 +1579,7 @@ S.slip=(()=>{const d={bank:SLIP_START,legs:[],open:[],done:[]};
   try{const o=JSON.parse(store.get('slip')||'null'); return (o&&typeof o==='object')?Object.assign(d,o):d;}catch(e){return d;}})();
 S.slipEv={}; if(!S.stEv) S.stEv={}; if(!S.mvEv) S.mvEv={};
 function slipSave(){ store.set('slip',JSON.stringify(S.slip)); }
-function slipHas(lg,id){ return S.slip.legs.some(l=>l.lg===lg&&l.id===id); }
+function slipHas(lg,id,side){ return S.slip.legs.some(l=>l.lg===lg&&l.id===id&&(side==null||l.side===side)); }
 function slipHasLeg(lg,id){ return slipHas(lg,id); }
 function propLegId(P,lab,dir){ return 'p:'+P.id+':'+lab+':'+dir; }
 /* a price the book is actually offering, typed in American form */
@@ -1595,33 +1598,39 @@ function legDec(l){
 }
 function legModelP(l){ return l.win!=null?clampP(l.win/100):null; }
 function amer(dec){ if(dec==null) return '\u2014'; return dec>=2?'+'+Math.round((dec-1)*100):String(Math.round(-100/(dec-1))); }
-function slipPick(lg,g){
+/* either side of a game can go on the slip. The model prices its own pick, so the
+   other side is that number flipped; a side the model says nothing about carries no
+   price until you type your book's odds next to it. */
+function slipSide(lg,g,side){
   const p=findPick(g,lg), m=myGet(lg,g.id);
-  let out=null;
-  if(m){ const side=m.side, pick=(side==='home'?g.home:g.away).abbr||m.team;
-    let win=null,vegas=null;
-    if(p){ const sd=sideOf(p.pick,g);
-      if(sd===side){ win=p.win; vegas=p.vegas; }
-      else { win=p.win!=null?100-p.win:null; vegas=p.vegas!=null?100-p.vegas:null; } }
-    out={side,pick,win,vegas,src:'you'}; }
-  else if(p){ const side=sideOf(p.pick,g); if(!side) return null;
-    out={side,pick:p.pick,win:p.win,vegas:p.vegas,src:'model'}; }
-  // a leg needs a price: without a model % or a Vegas % there is nothing to pay out on
-  if(!out||(out.win==null&&out.vegas==null)) return null;
-  return out;
+  const t=side==='home'?g.home:g.away;
+  const pick=t.abbr||t.name||side;
+  let win=null,vegas=null,src='you';
+  if(p){ const sd=sideOf(p.pick,g);
+    if(sd===side){ win=p.win; vegas=p.vegas; }
+    else if(sd){ win=p.win!=null?100-p.win:null; vegas=p.vegas!=null?100-p.vegas:null; }
+    src=(m&&m.side===side)?'you':(sd===side?'model':'fade');
+  }
+  return {side,pick,win,vegas,src};
 }
-function slipToggle(lg,g){
-  if(slipHas(lg,g.id)){ S.slip.legs=S.slip.legs.filter(l=>!(l.lg===lg&&l.id===g.id)); slipSave(); return; }
-  const k=slipPick(lg,g); if(!k) return;
+function slipPick(lg,g){   /* kept for the model's own side */
+  const p=findPick(g,lg); const sd=p?sideOf(p.pick,g):null;
+  return sd?slipSide(lg,g,sd):null;
+}
+function slipToggle(lg,g,side){
+  if(slipHas(lg,g.id,side)){ S.slip.legs=S.slip.legs.filter(l=>!(l.lg===lg&&l.id===g.id&&l.side===side)); slipSave(); return; }
+  const k=slipSide(lg,g,side); if(!k) return;
   if(S.slip.legs.length>=10) return;
-  S.slip.legs.push({lg,id:g.id,d:ymd(g.date),away:g.away.abbr||'',home:g.home.abbr||'',pick:k.pick,side:k.side,win:k.win,vegas:k.vegas,src:k.src});
+  S.slip.legs.push({lg,id:g.id,d:ymd(g.date),away:g.away.abbr||'',home:g.home.abbr||'',pick:k.pick,side:k.side,win:k.win,vegas:k.vegas,src:k.src,odds:''});
   slipSave();
 }
 function slipBtn(lg,g){
   if(g.state!=='pre') return '';
-  if(!slipPick(lg,g)) return '';
-  const on=slipHas(lg,g.id);
-  return `<button class="slipbtn" type="button" data-slip="${lg}|${g.id}" aria-pressed="${on}">${on?'\u2713 On slip':'+ Slip'}</button>`;
+  return ['away','home'].map(side=>{
+    const k=slipSide(lg,g,side), on=slipHas(lg,g.id,side);
+    const d=legDec({win:k.win,vegas:k.vegas});
+    return `<button class="slipbtn${k.src==='model'?' mdl':''}" type="button" data-slip="${lg}|${g.id}|${side}" aria-pressed="${on}" title="${on?'Remove':'Add'} ${esc(k.pick)}${k.src==='model'?' (the model\u2019s side)':''}">${on?'\u2713 ':'+ '}${esc(k.pick)}${d?' <span class="so">'+amer(d)+'</span>':''}</button>`;
+  }).join('');
 }
 function slipPlace(stake){
   const legs=S.slip.legs; if(!legs.length) return;
@@ -1749,8 +1758,15 @@ function slipConflicts(legs){
   legs.forEach(l=>{const k=gameKeyOf(l); if(k) byGame[k]=(byGame[k]||0)+1;});
   const worst=Object.entries(byGame).sort((a,b)=>b[1]-a[1])[0];
   if(worst&&worst[1]>=3) add('soft','Three or more legs in one game',`${worst[1]} of your ${legs.length} legs are the same game. Treat the combined number as a rough ceiling, not a price.`);
-  if(legs.filter(l=>l.kind==='prop'&&!americanDec(l.odds)).length)
-    add('soft','Some props have no book price',`Props without odds typed in are priced off the model\u2019s own number, so their edge shows as zero. Put your book\u2019s price in to see whether there is anything there.`);
+  const unpriced=legs.filter(l=>legDec(l)==null);
+  if(unpriced.length)
+    add('hard','A leg has no price',`${unpriced.map(l=>esc(l.pick)).join(', ')} \u2014 the model says nothing about ${unpriced.length>1?'these sides':'this side'} and no book odds are typed in, so there is nothing to pay out on. Put your book\u2019s number in the odds box next to ${unpriced.length>1?'them':'it'}.`);
+  const modelOnly=legs.filter(l=>l.kind==='prop'&&!americanDec(l.odds)&&legDec(l)!=null);
+  if(modelOnly.length)
+    add('soft','Some props are priced off the model',`${modelOnly.length} prop${modelOnly.length>1?'s have':' has'} no book odds typed in, so ${modelOnly.length>1?'their':'its'} edge shows as zero. Put your book\u2019s price in to see whether there is anything there.`);
+  const fades=legs.filter(l=>l.src==='fade');
+  if(fades.length)
+    add('soft','Against the model',`${fades.map(l=>esc(l.pick)).join(', ')} \u2014 the model likes the other side ${fades.length>1?'of those games':'of that game'}. Fine if that is the bet you want, but the price shown is the model\u2019s number flipped, not an independent read.`);
   const seen=new Set(), dedup=[];
   for(const c of out){ const k=c.sev+'|'+c.t+'|'+c.d; if(!seen.has(k)){ seen.add(k); dedup.push(c); } }
   return dedup.sort((a,b)=>(a.sev==='hard'?0:1)-(b.sev==='hard'?0:1));
@@ -1788,10 +1804,10 @@ function renderSlip(){
     const where=l.kind==='prop'
       ? `${esc(l.at||'')} ${esc(l.opp||'')} \u00b7 ${esc(HLG[l.lg]||l.lg)}${l.n?` \u00b7 ${l.hits} of ${l.n} in his log`:''}`
       : `${esc(l.away)} @ ${esc(l.home)} \u00b7 ${esc(HLG[l.lg]||l.lg)}${l.src==='you'?' \u00b7 your pick':''}`;
-    return `<div class="leg"><span><span class="lp">${esc(l.pick)}</span> <span class="muted">${where}</span></span>
-      <span class="lo">${l.win!=null?l.win+'% \u00b7 ':''}${amer(d)}${ed!=null?` \u00b7 <b class="${ed>0?'good':'bad'}">${ed>0?'+':''}${(ed*100).toFixed(1)}%</b>`:''}${book?'':'<span class="muted"> est</span>'}</span>
+    return `<div class="leg"><div><span class="lp">${esc(l.pick)}</span> <span class="muted">${where}</span></div>
+      <div class="lrow"><span class="lo">${l.win!=null?l.win+'% \u00b7 ':''}${amer(d)}${ed!=null?` \u00b7 <b class="${ed>0?'good':'bad'}">${ed>0?'+':''}${(ed*100).toFixed(1)}%</b>`:''}${book?'':' <span class="muted">est</span>'}</span>
       <input class="legodds" type="text" data-legodds="${i}" value="${esc(l.odds||'')}" placeholder="odds" aria-label="Book odds for ${esc(l.pick)}">
-      <button class="mvx" type="button" data-slipx="${esc(l.lg)}|${esc(l.id)}" aria-label="Remove leg">\u2715</button></div>`;
+      <button class="mvx" type="button" data-slipx="${esc(l.lg)}|${esc(l.id)}|${esc(l.side||'')}" aria-label="Remove leg">\u2715</button></div></div>`;
   }).join('');
   const conflicts=slipConflicts(sl.legs);
   const blocked=conflicts.some(c=>c.sev==='hard');
@@ -1841,11 +1857,12 @@ document.addEventListener('click',e=>{
   if(t.dataset.my){ const [lg,id,side]=t.dataset.my.split('|');
     const g=(S.events||[]).find(x=>x.id===id)||S.mvEv[lg+'|'+id]||S.stEv[lg+'|'+id];
     if(g){ myToggle(lg,g,side); if(S.league==='mv') renderMV(); else if(S.league==='stars') renderStars(); else repaint(id); } return; }
-  if(t.dataset.slip){ const [lg,id]=t.dataset.slip.split('|');
+  if(t.dataset.slip){ const [lg,id,side]=t.dataset.slip.split('|');
     const g=(S.events||[]).find(x=>x.id===id)||S.mvEv[lg+'|'+id]||S.stEv[lg+'|'+id];
-    if(g){ slipToggle(lg,g); if(S.league==='mv') renderMV(); else if(S.league==='stars') renderStars(); else repaint(id);
+    if(g){ slipToggle(lg,g,side||'away'); if(S.league==='mv') renderMV(); else if(S.league==='stars') renderStars(); else repaint(id);
       const tb=$('tabs').querySelector('[data-l="slip"]'); if(tb) tb.innerHTML=slipTabLabel(); } return; }
-  if(t.dataset.slipx){ const [lg,id]=t.dataset.slipx.split('|'); S.slip.legs=S.slip.legs.filter(l=>!(l.lg===lg&&l.id===id)); slipSave(); renderSlip(); render(); return; }
+  if(t.dataset.slipx){ const [lg,id,side]=t.dataset.slipx.split('|');
+    S.slip.legs=S.slip.legs.filter(l=>!(l.lg===lg&&l.id===id&&(side==null||side===''||l.side===side||l.kind==='prop'))); slipSave(); renderSlip(); render(); return; }
   if(t.dataset.slipgo){ const si=document.getElementById('stake'); slipPlace(si?si.value:50); S.slipStake=null; renderSlip(); loadSlip(); render(); return; }
   if(t.dataset.slipclear){ S.slip.legs=[]; slipSave(); renderSlip(); render(); return; }
   if(t.dataset.slipreset){ S.slip.bank=SLIP_START; S.slip.done=[]; S.slip.open=[]; S.slip.legs=[]; slipSave(); renderSlip(); render(); return; }
