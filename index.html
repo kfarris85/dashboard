@@ -386,6 +386,7 @@ a{color:var(--home)}
 <main class="wrap">
   <section class="sres" id="sres" hidden></section>
   <section id="alerts"></section>
+  <section id="edgebar"></section>
   <section class="summary" id="summary"></section>
   <div class="note" id="note"></div>
   <div id="err"></div>
@@ -399,7 +400,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-12-input2';
+const BUILD='2026-11-12-moneyline1';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
@@ -428,7 +429,7 @@ const STATES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California
 const WMO={0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Fog',51:'Drizzle',53:'Drizzle',55:'Drizzle',56:'Freezing drizzle',57:'Freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow',80:'Showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Snow showers',95:'Thunderstorms',96:'Thunderstorms',99:'Thunderstorms'};
 
 const store={get(k){try{return localStorage.getItem('mgc_'+k)}catch(e){return null}},set(k,v){try{localStorage.setItem('mgc_'+k,v)}catch(e){}}};
-const S={league:(LEAGUES[store.get('league')]||['hist','stars','mv','slip','props'].includes(store.get('league')))?store.get('league'):'nfl',hLg:'all',hRows:null,hLive:0,hBusy:false,filter:'all',date:null,week:null,seasontype:null,events:[],open:new Set(),sum:{},wx:{},geo:{},err:null,last:null,timer:null,tick:null,next:0,token:0,weekNum:null,props:{lg:null,id:null,name:'',img:'',q:'',stat:null,lines:{},top:[],find:null,ctx:null,ctxKey:null,busy:false,err:null}};
+const S={league:(LEAGUES[store.get('league')]||['hist','stars','mv','slip','props'].includes(store.get('league')))?store.get('league'):'nfl',hLg:'all',hRows:null,hLive:0,hBusy:false,filter:'all',date:null,week:null,seasontype:null,events:[],open:new Set(),sum:{},wx:{},geo:{},err:null,last:null,timer:null,tick:null,next:0,token:0,weekNum:null,moneyline:null,props:{lg:null,id:null,name:'',img:'',q:'',stat:null,lines:{},top:[],find:null,ctx:null,ctxKey:null,busy:false,err:null}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
@@ -487,6 +488,55 @@ function grade(g,p){
   return r;
 }
 function resText(r,state){ if(!r) return ''; if(state==='post') return r==='win'?'W':r==='loss'?'L':'P'; return r==='win'?'ahead':r==='loss'?'behind':'even'; }
+
+/* ---------- MoneyLine real sportsbook data (data/moneyline.json, free-tier budget-capped) ---------- */
+const ML_LG={nfl:'nfl',cfb:'ncaa_football',nba:'nba',cbb:'ncaa_basketball',mlb:'mlb'};
+function mlRec(p){
+  const ml=S.moneyline; if(!p||!ml||!ml.games) return null;
+  return ml.games.find(m=>m.matched&&m.lg===S.league&&m.away===p.away&&m.home===p.home)||null;
+}
+function mlMarket(odds,type){
+  // one representative price per market, preferring the book with the
+  // freshest lastUpdate; mainPoint (when present) is the cross-book consensus line
+  if(!odds||!odds.bookmakers||!odds.bookmakers.length) return null;
+  let best=null;
+  for(const bk of odds.bookmakers){
+    const mk=(bk.markets||[]).find(x=>x.marketType===type); if(!mk) continue;
+    if(!best||new Date(mk.lastUpdate||0)>new Date(best.mk.lastUpdate||0)) best={bk,mk};
+  }
+  return best;
+}
+function mlLineHTML(g,p){
+  const rec=mlRec(p); if(!rec||!rec.odds) return '';
+  const o=rec.odds; const away=o.awayTeamName||p.away, home=o.homeTeamName||p.home;
+  const ml=mlMarket(o,'moneyline'), sp=mlMarket(o,'spread'), tot=mlMarket(o,'total');
+  const outFor=(mkt,name)=>mkt&&mkt.mk.outcomes.find(x=>x.name===name);
+  const bits=[];
+  if(sp){ const mp=sp.mk.mainPoint; const aOut=outFor(sp,away); const favHome=mp!=null?mp<0===((aOut&&aOut.point||0)>0):null;
+    bits.push(`<span class="chip">Spread ${mp!=null?(mp>0?'+':'')+mp+' '+esc(mp<0?home:away):esc(sp.bk.bookmakerName)}</span>`); }
+  if(tot){ const mp=tot.mk.mainPoint; if(mp!=null) bits.push(`<span class="chip">O/U ${mp}</span>`); }
+  if(ml){ const h=outFor(ml,home), a=outFor(ml,away);
+    const fmt=x=>x==null?'':(x>0?'+':'')+x;
+    if(h&&a) bits.push(`<span class="chip">ML ${esc(g.away.abbr||away)} ${fmt(a.price)} / ${esc(g.home.abbr||home)} ${fmt(h.price)}</span>`); }
+  if(!bits.length) return '';
+  const books=new Set(o.bookmakers.map(b=>b.bookmakerName)).size;
+  return `<div><h4>Live sportsbook line <span class="mv good" style="margin-left:6px">via MoneyLine</span></h4><div class="chips">${bits.join('')}</div><p class="muted" style="margin-top:4px;font-size:12.5px">Consensus across ${books} book${books===1?'':'s'}. The model's own line/total above is its own estimate — this is a real line you could actually bet.</p></div>`;
+}
+function mlBadge(p){ return mlRec(p)&&mlRec(p).odds?'<span class="mv good" title="Real sportsbook line available in details">📡 Live line</span>':''; }
+function edgeItems(){
+  const ml=S.moneyline; const want=ML_LG[S.league]; if(!ml||!ml.edge||!want) return [];
+  const all=[...(ml.edge.ev||[]),...(ml.edge.value||[])].filter(x=>x.leagueId===want);
+  const seen=new Set(); const out=[];
+  for(const it of all){ const k=it.edgeId||(it.eventId+'|'+it.outcome); if(seen.has(k)) continue; seen.add(k); out.push(it); }
+  out.sort((a,b)=>((b.evBet&&b.evBet.edgePct)||0)-((a.evBet&&a.evBet.edgePct)||0));
+  return out.slice(0,6);
+}
+function edgebarHTML(){
+  const items=edgeItems(); if(!items.length) return '';
+  const row=it=>{ const eb=it.evBet||{}; const pct=eb.edgePct!=null?(eb.edgePct>0?'+':'')+eb.edgePct.toFixed(1)+'%':'';
+    return `<div class="trow"><span></span><div class="tname"><b>${esc(it.description||it.outcome||'')}</b><span class="rec">${esc(it.market||'')}</span></div><div class="score">${esc(pct)}</div></div>`; };
+  return `<section class="panel"><h3>+EV / value bets today</h3><p class="sub">Real sportsbook mispricings vs. MoneyLine's fair-odds model — separate from the picks above. Via MoneyLine, free tier.</p>${items.map(row).join('')}</section>`;
+}
 
 /* ---------- data loads ---------- */
 async function loadBoard(){
@@ -662,7 +712,7 @@ function render(){
   $('tabs').innerHTML=Object.entries(LEAGUES).map(([k,v])=>`<button class="tab" role="tab" type="button" data-l="${k}" aria-selected="${k===S.league}">${v.label}${heatIcon(k)}</button>`).join('')+`<button class="tab hist-tab" role="tab" type="button" data-l="mv" aria-selected="${S.league==='mv'}">▦ Multiview${S.mv.length?` <span class="mvn">${S.mv.length}</span>`:''}</button><button class="tab hist-tab" role="tab" type="button" data-l="stars" aria-selected="${S.league==='stars'}">★ Today</button><button class="tab hist-tab" role="tab" type="button" data-l="slip" aria-selected="${S.league==='slip'}">${slipTabLabel()}</button><button class="tab hist-tab" role="tab" type="button" data-l="props" aria-selected="${S.league==='props'}">◎ Props</button><button class="tab hist-tab" role="tab" type="button" data-l="hist" aria-selected="${S.league==='hist'}">History</button>`;
   _tb.scrollLeft=_sl; { const sel=_tb.querySelector('[aria-selected="true"]'); if(sel&&S._tabShown!==S.league){ S._tabShown=S.league; const r=sel.getBoundingClientRect(), R=_tb.getBoundingClientRect(); if(r.left<R.left+12||r.right>R.right-12) _tb.scrollLeft+=r.left-R.left-40; } }
   const isH=S.league==='hist'||S.league==='stars'||S.league==='mv'||S.league==='slip'||S.league==='props';
-  ['row2','summary','note','err','games','alerts'].forEach(id=>{$(id).hidden=isH}); $('hist').hidden=!isH;
+  ['row2','summary','note','err','games','alerts','edgebar'].forEach(id=>{$(id).hidden=isH}); $('hist').hidden=!isH;
   if(isH){ if(S.league==='stars') renderStars(); else if(S.league==='mv') renderMV(); else if(S.league==='slip') renderSlip(); else if(S.league==='props') renderProps(); else renderHistory(); return; }
   const L=LEAGUES[S.league];
   $('navlbl').textContent=L.nav==='day'?parseYmd(S.date||ymd(new Date())).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}):(S.weekNum!=null?'Week '+S.weekNum:'This week');
@@ -679,6 +729,7 @@ function render(){
   $('note').innerHTML=P&&P.games&&P.games.length?`<span>Model sheet: <a href="${esc(P.url)}" target="_blank" rel="noopener">${esc(P.sheet)}</a></span><span>Scores &amp; odds: ESPN · Weather: Open-Meteo</span>`:`<span>No model picks loaded for ${esc(L.label)}.</span><span>Scores &amp; odds: ESPN · Weather: Open-Meteo</span>`;
   const shown=evs.filter(visible);
   renderAlerts();
+  $('edgebar').innerHTML=edgebarHTML();
   $('games').innerHTML=shown.length?shown.map(card).join(''):`<div class="empty">${evs.length?'No games match this filter.':S.err?'Waiting for ESPN…':`No ${esc(L.label)} games on this ${L.nav==='day'?'date':'week'}. Use the arrows to look ahead or back.`}</div>`;
 }
 function trow(t,g,p){
@@ -732,7 +783,7 @@ function card(g){
   <div class="g-top"><span class="status">${esc(status)}</span><span class="g-tr"><span>${esc(g.tv)}</span>${g.state!=='post'?mvBtn(S.league,g):''}</span></div>
   <div class="teams">${trow(g.away,g,p)}${trow(g.home,g,p)}</div>
   ${sitHTML(g)}${wpHTML(g)}${modelHTML(g,p)}
-  <div class="meta">${line?`<span>${esc(line)}</span>`:''}${wxText(g)}${injCount(g)}</div>
+  <div class="meta">${line?`<span>${esc(line)}</span>`:''}${wxText(g)}${injCount(g)}${p?mlBadge(p):''}</div>
   ${(()=>{const sb=slipBtn(S.league,g);return sb?`<div class="g-acts">${sb}</div>`:'';})()}
   <button class="more" type="button" data-more="${g.id}" aria-expanded="${open}">${open?'Hide details':'Details · stats · injuries'}</button>
   ${open?detail(g,p):''}
@@ -745,7 +796,7 @@ function spark(arr){
 }
 function detail(g,p){
   const L=LEAGUES[S.league]; const s=S.sum[g.id]; const out=[];
-  if(p){ out.push(`<div><h4>Why the model likes it</h4><p class="why">${esc(p.why)}</p>${p.proj?`<p class="muted" style="margin-top:4px">Projected ${esc(g.away.abbr)} ${p.proj[0]} – ${esc(g.home.abbr)} ${p.proj[1]}${p.fTotal?` · Formula total ${p.fTotal} vs market ${p.total}`:''}${p.cover?` · Cover ${p.cover}%`:''}${p.kalshi?` · Kalshi ${p.kalshi}%`:''}</p>`:''}${lineDetail(g,p)}${p.proj?'':p.margin!=null?`<p class="muted" style="margin-top:4px">Model margin ${p.margin} · Line ${esc(p.line)} · Formula total ${p.fTotal} vs market ${p.total}</p>`:''}</div>`); }
+  if(p){ out.push(`<div><h4>Why the model likes it</h4><p class="why">${esc(p.why)}</p>${p.proj?`<p class="muted" style="margin-top:4px">Projected ${esc(g.away.abbr)} ${p.proj[0]} – ${esc(g.home.abbr)} ${p.proj[1]}${p.fTotal?` · Formula total ${p.fTotal} vs market ${p.total}`:''}${p.cover?` · Cover ${p.cover}%`:''}${p.kalshi?` · Kalshi ${p.kalshi}%`:''}</p>`:''}${lineDetail(g,p)}${p.proj?'':p.margin!=null?`<p class="muted" style="margin-top:4px">Model margin ${p.margin} · Line ${esc(p.line)} · Formula total ${p.fTotal} vs market ${p.total}</p>`:''}</div>`); out.push(mlLineHTML(g,p)); }
   if(!s){ out.push('<div class="sk">Loading game detail…</div>'); return `<div class="detail">${out.join('')}</div>`; }
   if(s.wp&&s.wp.length>1) out.push(`<div><h4>Win probability · ${esc(g.home.abbr)} (home)</h4>${spark(s.wp)}</div>`);
   if(s.stats&&s.stats.length===2&&s.stats[0].stats.length){
@@ -1260,8 +1311,9 @@ function renderHistory(){
 /* ---------- published data files (kept current by the scheduled publish task) ---------- */
 async function loadData(){
   const get=u=>fetch(u+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
-  const [p,hj,nr,br,cr,kr,nd,kd,bd,fd,md]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json'),get('data/nba_ranks.json'),get('data/cfb_ranks.json'),get('data/cbb_ranks.json'),get('data/nfl_dsplits.json'),get('data/cbb_dsplits.json'),get('data/nba_dsplits.json'),get('data/cfb_dsplits.json'),get('data/mlb_dsplits.json')]);
+  const [p,hj,nr,br,cr,kr,nd,kd,bd,fd,md,ml]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json'),get('data/nba_ranks.json'),get('data/cfb_ranks.json'),get('data/cbb_ranks.json'),get('data/nfl_dsplits.json'),get('data/cbb_dsplits.json'),get('data/nba_dsplits.json'),get('data/cfb_dsplits.json'),get('data/mlb_dsplits.json'),get('data/moneyline.json')]);
   if(nr&&nr.teams) S.nflRanks=nr; if(br&&br.teams) S.nbaRanks=br; if(cr&&cr.teams) S.cfbRanks=cr; if(kr&&kr.teams) S.cbbRanks=kr;
+  if(ml&&ml.games) S.moneyline=ml;
   S.dsp=S.dsp||{}; if(nd&&nd.teams) S.dsp.nfl=nd; if(kd&&kd.teams) S.dsp.cbb=kd; if(bd&&bd.teams) S.dsp.nba=bd; if(fd&&fd.teams) S.dsp.cfb=fd; if(md&&md.teams) S.dsp.mlb=md;
   if(p&&p.leagues){ window.MODEL_PICKS=Object.assign({},window.MODEL_PICKS||{},p.leagues); }
   if(hj&&Array.isArray(hj.rows)&&hj.rows.length){ S.histJson=hj; S.hRows=null; S._heatRows=null; }
@@ -1388,7 +1440,7 @@ function mvTile(x){
     ${head}
     <div class="teams">${trow(g.away,g,p)}${trow(g.home,g,p)}</div>
     ${sitHTML(g)}${wpHTML(g)}${modelHTML(g,p)}
-    <div class="meta">${line?`<span>${esc(line)}</span>`:''}${wxText(g)}${injCount(g)}</div>
+    <div class="meta">${line?`<span>${esc(line)}</span>`:''}${wxText(g)}${injCount(g)}${p?mlBadge(p):''}</div>
     ${(()=>{const sb=slipBtn(x.lg,g);return sb?`<div class="g-acts">${sb}</div>`:'';})()}
   </article>`;
   S.league=savedLg;
