@@ -400,10 +400,10 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-12-moneyline1';
+const BUILD='2026-11-25-cache1';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
-  try{ const r=await fetch(location.pathname+'?build='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
+  try{ const r=await fetch(location.pathname,{cache:'no-cache'}); /* revalidates: unchanged page = tiny 304 reply */ if(!r.ok) return;
     const m=/const BUILD='([^']+)'/.exec(await r.text()); if(!m||m[1]===BUILD||document.getElementById('upbar')) return;
     const b=document.createElement('button'); b.id='upbar'; b.type='button'; b.textContent='New version of the dashboard is ready — tap to update';
     b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:50;border:0;padding:14px max(16px,env(safe-area-inset-left,0px)) calc(14px + env(safe-area-inset-bottom,0px));background:var(--accent);color:var(--panel);font:700 15px/1.2 var(--f-body);cursor:pointer';
@@ -1310,7 +1310,7 @@ function renderHistory(){
 
 /* ---------- published data files (kept current by the scheduled publish task) ---------- */
 async function loadData(){
-  const get=u=>fetch(u+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
+  const get=u=>fetch(u,{cache:'no-cache'}) /* revalidate with ETag: only changed files re-download */.then(r=>r.ok?r.json():null).catch(()=>null);
   const [p,hj,nr,br,cr,kr,nd,kd,bd,fd,md,ml]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json'),get('data/nba_ranks.json'),get('data/cfb_ranks.json'),get('data/cbb_ranks.json'),get('data/nfl_dsplits.json'),get('data/cbb_dsplits.json'),get('data/nba_dsplits.json'),get('data/cfb_dsplits.json'),get('data/mlb_dsplits.json'),get('data/moneyline.json')]);
   if(nr&&nr.teams) S.nflRanks=nr; if(br&&br.teams) S.nbaRanks=br; if(cr&&cr.teams) S.cfbRanks=cr; if(kr&&kr.teams) S.cbbRanks=kr;
   if(ml&&ml.games) S.moneyline=ml;
