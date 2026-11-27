@@ -120,7 +120,7 @@ def num(v):
 
 def txt(v):
     v = str(v or '').strip()
-    return None if v in ('', '—') else v
+    return None if v in ('', '—', '-') else v
 
 
 def put(d, k, v):
@@ -165,6 +165,18 @@ def emit(name, obj, same_as_existing):
     if SHADOW:
         written.append(name)
         log(f'{name}: WOULD UPDATE (shadow)')
+        if old is not None and isinstance(obj.get('teams'), dict):
+            ot, nt = old.get('teams', {}), obj['teams']
+            dif = [k for k in set(ot) | set(nt) if ot.get(k) != nt.get(k)]
+            log(f'   {len(dif)} of {len(nt)} teams differ; through {old.get("through", old.get("asof"))} -> {obj.get("through", obj.get("asof"))}')
+            for k in dif[:3]:
+                log(f'   {k}: {json.dumps(ot.get(k))[:160]} -> {json.dumps(nt.get(k))[:160]}')
+        if old is not None and isinstance(obj.get('rows'), list):
+            orr, nr = old.get('rows', []), obj['rows']
+            ok = {r['key']: r for r in orr}; nk = {r['key']: r for r in nr}
+            log(f'   rows {len(orr)} -> {len(nr)}; same keys {len(set(ok) & set(nk))}; changed {sum(1 for k in ok if k in nk and ok[k] != nk[k])}; order same {[r["key"] for r in orr] == [r["key"] for r in nr][:len(orr)]}')
+            for k in [k for k in ok if k in nk and ok[k] != nk[k]][:3]:
+                log(f'   {k}: ' + json.dumps({f: (ok[k].get(f), nk[k].get(f)) for f in ok[k] if ok[k].get(f) != nk[k].get(f)}, ensure_ascii=False)[:300])
         return
     json.dump(obj, open(os.path.join(DATA, name), 'w'), ensure_ascii=False, separators=(',', ':'))
     written.append(name)
@@ -201,11 +213,16 @@ def history():
         if len(block) < 2000:
             break
         start += 2000
-    hdr = vals[0]; ix = {h: i for i, h in enumerate(hdr)}
+    # Fixed A–V column order (the Log's header row is not reliably row 1). Skip a header row if one is present.
+    COLS = ['Key', 'League', 'Season', 'Date', 'Away', 'Home', 'Pick', 'Model %', 'Vegas %', 'Best Pick', 'Final', 'Result',
+            'Spread Pick', 'ATS', 'Formula Total', 'Market Total', 'Actual Total', 'Total Lean', 'O/U Result', 'CLV', 'Beat Close', 'Source']
+    ix = {h: i for i, h in enumerate(COLS)}
+    if not any(row and row[0].strip() == 'Key' for row in vals):
+        notes.append('Season Tracker Log has no header row (read by fixed column order)')
     g = lambda row, h: (row[ix[h]] if ix.get(h) is not None and ix[h] < len(row) else '')
     rows, kept = [], 0
-    for row in vals[1:]:
-        if not g(row, 'Key').strip() or not g(row, 'Result').strip():
+    for row in vals:
+        if not row or row[0].strip() == 'Key' or not g(row, 'Key').strip() or not g(row, 'Result').strip():
             continue
         kept += 1
         rows.append({'key': g(row, 'Key'), 'lg': g(row, 'League'), 'season': g(row, 'Season'), 'date': g(row, 'Date'),
@@ -315,7 +332,8 @@ def pk_nba():
             put(g, 'fTotal', num(r.get('Formula Total'))); put(g, 'total', num(r.get('Market Total'))); put(g, 'lean', txt(r.get('Total Lean')))
             put(g, 'why', txt(r.get('Why')))
             byid[gid] = g
-    picks['nba'] = {'sheet': want[-1]['name'] if want else '', 'url': want[-1]['webViewLink'] if want else '',
+    latest = want[-1] if want else (max(files, key=lambda f: f['createdTime']) if files else None)  # task kept the newest sheet's title even with no games
+    picks['nba'] = {'sheet': latest['name'] if latest else '', 'url': latest['webViewLink'] if latest else '',
                     'games': [g for g in byid.values() if keep_date(g)]}
 
 
