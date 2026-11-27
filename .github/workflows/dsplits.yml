@@ -1,0 +1,56 @@
+name: Defensive Splits Publish
+
+on:
+  schedule:
+    # ~7:47am Central (UTC cron; 6:47 during daylight saving). Replaces the Claude task.
+    - cron: '47 13 * * *'
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: 'Rebuild every in-season league, ignoring the day-of-week rules'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dsplits
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pandas / pyarrow
+        run: pip install --quiet pandas numpy pyarrow
+
+      - name: Build splits (each league independent; failures reported at the end)
+        env:
+          FORCE_ALL: ${{ inputs.force_all && '1' || '0' }}
+        run: python3 -I scripts/dsplits_run.py . || echo "SPLITS_FAILED=1" >> "$GITHUB_ENV"
+
+      - name: Commit and push whatever passed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/nfl_dsplits.json data/cbb_dsplits.json data/nba_dsplits.json data/cfb_dsplits.json data/mlb_dsplits.json 2>/dev/null || true
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -m "Defensive splits ($(TZ=America/Chicago date '+%Y-%m-%d %H:%M') CT) [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
+            sleep 10
+          done
+          exit 1
+
+      - name: Fail the run if any league failed (GitHub emails you)
+        if: env.SPLITS_FAILED == '1'
+        run: |
+          echo "One or more leagues failed a sanity check or download — see the build step log. Their existing files were kept."
+          exit 1
