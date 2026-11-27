@@ -9,8 +9,9 @@ recent UFC cards from ESPN, scores every fight, and writes:
 
 Model (stats only, then compared to the DraftKings line ESPN carries):
   record quality (shrunk win %), experience, last-3 form, sig strikes landed
+  (all per-minute stats shrunk toward UFC averages by number of UFC fights)
   per min + accuracy, takedowns and sub attempts per 15, reach, age (with an
-  extra penalty past 34), and KO rate. Weighted logit, capped 12-88%.
+  extra penalty past 34), and KO rate. Weighted logit, damped and capped 15-85%.
   The weights are hand-set priors, not fitted. Grade it on History before
   trusting it, same as the other models.
 
@@ -112,10 +113,14 @@ def fighter(aid):
         for s in cat.get('stats') or []:
             stats[s.get('name')] = s.get('value')
     # last 3 fights from the event log (played only)
-    last = []
+    last, nufc = [], 0
     log = get(f'{CORE}/athletes/{aid}/eventlog') or {}
     for it in ((log.get('events') or {}).get('items') or []):
         if not it.get('played'):
+            continue
+        if '/leagues/ufc/' in ((it.get('event') or {}).get('$ref') or ''):
+            nufc += 1
+        if len(last) == 3:
             continue
         ref = (it.get('competitor') or {}).get('$ref')
         if not ref:
@@ -123,21 +128,26 @@ def fighter(aid):
         c = get(ref) or {}
         w = c.get('winner')
         last.append('W' if w is True else 'L' if w is False else '?')
-        if len(last) == 3:
-            break
     has_stats = bool(stats) and any((stats.get(k) or 0) for k in ('strikeLPM', 'strikeAccuracy', 'takedownAvg'))
+    # ESPN's per-minute stats swing wildly on 1-2 UFC fights (one 40-second KO = 30 strikes/min).
+    # Shrink each toward the UFC average by sample size: n UFC fights counts n / (n + 3).
+    w = nufc / (nufc + 3.0)
+    def sh(key, avg):
+        v = stats.get(key)
+        return None if not has_stats or v is None else round(w * v + (1 - w) * avg, 2)
     return {
+        'nufc': nufc, 'raw': {k: stats.get(k) for k in ('strikeLPM', 'takedownAvg', 'submissionAvg')} if has_stats else None,
         'age': prof.get('age'), 'reach': prof.get('reach'), 'height': prof.get('height'),
         'hdisp': prof.get('displayHeight'), 'stance': (prof.get('stance') or {}).get('text'),
         'nick': prof.get('nickname'), 'head': (prof.get('headshot') or {}).get('href'),
         'camp': (prof.get('association') or {}).get('name'),
-        'lpm': stats.get('strikeLPM') if has_stats else None,
-        'acc': stats.get('strikeAccuracy') if has_stats else None,
-        'td': stats.get('takedownAvg') if has_stats else None,
+        'lpm': sh('strikeLPM', 3.8),
+        'acc': sh('strikeAccuracy', 47.0),
+        'td': sh('takedownAvg', 1.4),
         'tdAcc': stats.get('takedownAccuracy') if has_stats else None,
-        'sub': stats.get('submissionAvg') if has_stats else None,
-        'ko': ((stats.get('koPercentage') or 0) + (stats.get('tkoPercentage') or 0)) if has_stats else None,
-        'dec': stats.get('decisionPercentage') if has_stats else None,
+        'sub': sh('submissionAvg', 0.5),
+        'ko': None if not has_stats else round(w * ((stats.get('koPercentage') or 0) + (stats.get('tkoPercentage') or 0)) + (1 - w) * 30, 1),
+        'dec': None if not has_stats else round(w * (stats.get('decisionPercentage') or 0) + (1 - w) * 45, 1),
         'last3': last,
     }
 
@@ -172,8 +182,8 @@ def score(A, B):
         old = lambda a: max(0, a - 34)
         parts.append((-0.04 * clamp(A['age'] - B['age'], -10, 10) - 0.06 * (old(A['age']) - old(B['age'])),
                       f"younger ({A['age']} vs {B['age']})", f"younger ({B['age']} vs {A['age']})"))
-    z = sum(p[0] for p in parts)
-    return clamp(1 / (1 + math.exp(-z)), 0.12, 0.88), parts
+    z = 0.8 * sum(p[0] for p in parts)  # damped: hand-set weights, keep it humble until it's graded
+    return clamp(1 / (1 + math.exp(-z)), 0.15, 0.85), parts
 
 
 def rounds_over(A, B, rounds, line):
@@ -289,7 +299,7 @@ def main():
             p, parts = score(fa, fb)
             for k in ('a', 'b'):
                 x = fa if k == 'a' else fb
-                f[k].update({kk: x.get(kk) for kk in ('age', 'reach', 'hdisp', 'stance', 'nick', 'head', 'camp', 'lpm', 'acc', 'td', 'tdAcc', 'sub', 'ko', 'dec', 'last3')})
+                f[k].update({kk: x.get(kk) for kk in ('nufc', 'age', 'reach', 'hdisp', 'stance', 'nick', 'head', 'camp', 'lpm', 'acc', 'td', 'tdAcc', 'sub', 'ko', 'dec', 'last3')})
             pick_a = p >= 0.5
             pick = A if pick_a else B
             win = round(100 * (p if pick_a else 1 - p), 1)
@@ -378,7 +388,7 @@ def main():
                                     'fights': []})['fights'].append(f)
 
     out = {'updated': datetime.now(CT).isoformat(timespec='seconds'),
-           'model': 'UFC v1: record, experience, form, striking, grappling, reach, age. Hand-set weights, not fitted.',
+           'model': 'UFC v1.1: record, experience, form, striking, grappling, reach, age. Hand-set weights, not fitted.',
            'events': sorted(cards.values(), key=lambda e: e['date'] or '')}
     for e in out['events']:
         e['fights'].reverse()  # main event first, like a fight card

@@ -409,7 +409,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-27-ufc1';
+const BUILD='2026-11-27-ufc2';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname,{cache:'no-cache'}); /* revalidates: unchanged page = tiny 304 reply */ if(!r.ok) return;
@@ -2537,10 +2537,10 @@ function ufTape(f){
     const fmt=v=>typeof v==='number'?v:esc(v??'—'); return `<tr><td class="${ca}">${fmt(x)}</td><th>${lab}</th><td class="${cb}">${fmt(y)}</td></tr>`; };
   const n=(v,d,s)=>v==null?null:+(+v).toFixed(d)+(s||''), l3=x=>(x.last3&&x.last3.length)?x.last3.join(' '):'—';
   return `<div class="detail"><div><h4>Tale of the tape</h4><div class="tbl"><table class="btable uf-tape"><thead><tr><th>${esc(a.short||a.name)}</th><th></th><th>${esc(b.short||b.name)}</th></tr></thead><tbody>
-    ${r('Record',a.rec,b.rec)}${r('Age',a.age,b.age,'lo')}${r('Height',a.hdisp,b.hdisp)}${r('Reach',a.reach!=null?a.reach+'"':null,b.reach!=null?b.reach+'"':null)}${r('Stance',a.stance,b.stance)}
+    ${r('Record',a.rec,b.rec)}${r('UFC fights',a.nufc,b.nufc)}${r('Age',a.age,b.age,'lo')}${r('Height',a.hdisp,b.hdisp)}${r('Reach',a.reach!=null?a.reach+'"':null,b.reach!=null?b.reach+'"':null)}${r('Stance',a.stance,b.stance)}
     ${r('Sig strikes / min',n(a.lpm,2),n(b.lpm,2),'hi')}${r('Strike accuracy',n(a.acc,0,'%'),n(b.acc,0,'%'))}${r('Takedowns / 15',n(a.td,2),n(b.td,2),'hi')}${r('Sub attempts / 15',n(a.sub,2),n(b.sub,2),'hi')}
     ${r('KO/TKO rate',n(a.ko,0,'%'),n(b.ko,0,'%'))}${r('Decision rate',n(a.dec,0,'%'),n(b.dec,0,'%'))}${r('Last 3 (newest first)',l3(a),l3(b))}${r('Camp',a.camp,b.camp)}
-  </tbody></table></div><p class="sub" style="margin:6px 0 0">Stats are ESPN's career UFC numbers. A dash means ESPN has no UFC stats yet (debut or thin history), so the model leans on record, age and reach for that fighter.</p></div></div>`;
+  </tbody></table></div><p class="sub" style="margin:6px 0 0">Per-minute and rate stats are ESPN's UFC career numbers, pulled toward the UFC average when a fighter has only a few UFC fights (one quick KO can make a debut look like 30 strikes a minute). A dash means no UFC stats yet, so the model leans on record, age and reach.</p></div></div>`;
 }
 function ufRow(t,f,P,L){
   const lost=L.state==='post'&&L.win&&L.win[t.id]===false&&Object.values(L.win).some(v=>v===true);
