@@ -443,8 +443,19 @@ def nfl_ranks():
     gm = [r for r in csv.DictReader(open(os.path.join(data, 'games.csv'))) if r['season'] == str(cur)]
     played = [r['gameday'] for r in gm if r.get('home_score') not in ('', 'NA', None)]
     old = read_json('nfl_ranks.json')
-    if old and played and old.get('through', '') >= max(played) and not FORCE:
-        return log('nfl_ranks: no new games since last build, skip')
+    # rebuild when a game finished after the last build (a build made mid-gameday counts as stale)
+    def kick(r):
+        try:
+            return datetime.fromisoformat(f"{r['gameday']}T{r.get('gametime') or '12:00'}").replace(tzinfo=ZoneInfo('America/New_York'))
+        except Exception:
+            return None
+    ends = [k + timedelta(hours=4) for k in (kick(r) for r in gm if r.get('home_score') not in ('', 'NA', None)) if k]
+    try:
+        built = datetime.fromisoformat(old['updated']) if old else None
+    except Exception:
+        built = None
+    if old and ends and built and built >= max(ends) and not FORCE:
+        return log('nfl_ranks: no games finished since last build, skip')
     files = ls('1gQfHq7PGykw4b6qNyLY-NFHfZEM6MVar')
     for n in ('teams.py', 'model.py', 'ratings_v2.py', 'model_v2.json'):
         f = newest(files, lambda x, n=n: x == n)

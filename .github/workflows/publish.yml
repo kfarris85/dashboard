@@ -1,10 +1,10 @@
 name: Dashboard Data Publish
 
 # Replaces the Claude scheduled task "Dashboard Data Publish".
-# MODE: 'shadow' builds everything and compares it with what's published, writing nothing.
+# MODE: live publishes. shadow (manual runs) builds and compares only.
 #       Switch to 'live' once shadow runs match.
 env:
-  MODE: shadow
+  MODE: live
 
 on:
   schedule:
@@ -17,7 +17,7 @@ on:
         description: 'shadow (compare only) or live (publish)'
         type: choice
         options: [shadow, live]
-        default: shadow
+        default: live
       force_all:
         description: 'Ignore the once-a-day / day-of-week skip rules'
         type: boolean
