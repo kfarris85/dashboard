@@ -130,8 +130,8 @@ def fighter(aid):
         last.append('W' if w is True else 'L' if w is False else '?')
     has_stats = bool(stats) and any((stats.get(k) or 0) for k in ('strikeLPM', 'strikeAccuracy', 'takedownAvg'))
     # ESPN's per-minute stats swing wildly on 1-2 UFC fights (one 40-second KO = 30 strikes/min).
-    # Shrink each toward the UFC average by sample size: n UFC fights counts n / (n + 3).
-    w = nufc / (nufc + 3.0)
+    # Shrink each toward the UFC average by sample size: n UFC fights counts n / (n + 5).
+    w = nufc / (nufc + 5.0)
     def sh(key, avg):
         v = stats.get(key)
         return None if not has_stats or v is None else round(w * v + (1 - w) * avg, 2)
