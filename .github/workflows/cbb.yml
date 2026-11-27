@@ -1,0 +1,59 @@
+name: College Basketball Model
+
+# Replaces the Claude scheduled task "Daily NCAA Basketball Model".
+# Model code is downloaded from Drive and checked against its MANIFEST every run (never stored here).
+on:
+  schedule:
+    - cron: '41 15 * 11,12,1,2,3,4 *'   # 9:41am Central standard time (8:41 during daylight saving)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'live (publish + grade) or shadow (build and compare with the Claude run, write nothing)'
+        type: choice
+        options: [live, shadow]
+        default: live
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cbb
+  cancel-in-progress: false
+
+env:
+  # Phone alerts: install the ntfy app and subscribe to this topic (not a secret; it only carries picks).
+  NTFY_TOPIC: kfarris-models-47a9150568a2
+  DASH_URL: https://kfarris85.github.io/dashboard/
+
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet google-auth requests pandas numpy pyarrow scipy
+      - name: Run model, double-check, grade
+        env:
+          GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
+        run: |
+          flag=""; [ "${{ inputs.mode }}" = "shadow" ] && flag="--shadow"
+          python3 -I scripts/cbb_daily.py . $flag || echo "CBB_FAILED=1" >> "$GITHUB_ENV"
+      - name: Commit and push
+        if: inputs.mode != 'shadow'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/cbb
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -m "College hoops model ($(TZ=America/Chicago date '+%Y-%m-%d %H:%M') CT) [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
+            sleep 10
+          done
+          exit 1
+      - name: Fail the run if anything failed (GitHub emails you; ntfy alert already sent)
+        if: env.CBB_FAILED == '1'
+        run: exit 1

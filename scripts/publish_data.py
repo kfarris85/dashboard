@@ -396,27 +396,41 @@ def pk_mlb():
 def cbb():
     if not (NOW.month >= 11 or NOW.month <= 3 or (NOW.month == 4 and NOW.day <= 10)):
         picks['cbb'] = {'sheet': '', 'url': '', 'games': []}; return
+    # The GitHub "College Basketball Model" saves to data/cbb/ now; Drive holds the days before the move.
+    season = TODAY.year + 1 if TODAY.month >= 8 else TODAY.year
+    label = f'{season - 1}-{str(season)[2:]}'
+    repo_cbb = os.path.join(DATA, 'cbb')
     files = ls('1P8oaadd8DTQcavJ_zEtN8biHso4bDMVZ')
-    def day_file(d, kind, data):
-        lab = d.strftime('%b %d')
-        return newest(files, lambda n: re.search(rf' CBB {kind} \({lab}\)' + (r' data\.csv$' if data else r'$'), n) is not None)
-    days = [(d, day_file(d, 'Picks', True)) for d in (YDAY, TODAY)]
-    days = [(d, f) for d, f in days if f]
+    d = os.path.join(TMP, 'cbb'); os.makedirs(d)
+
+    def day_picks(dd):
+        rp = os.path.join(repo_cbb, 'picks', f'{dd}.csv')
+        if os.path.exists(rp):
+            return rp
+        f = newest(files, lambda n: n == f'{label} CBB Picks ({dd.strftime("%b %d")}) data.csv')
+        return download(f, os.path.join(d, f'picks_{dd}.csv')) if f else None
+    days = [(dd, day_picks(dd)) for dd in (YDAY, TODAY)]
+    days = [(dd, p) for dd, p in days if p]
     if not days:
         picks['cbb'] = {'sheet': '', 'url': '', 'games': []}
         return log('cbb: no picks files for today/yesterday')
-    readable = newest([f for f in files if f['mimeType'].endswith('spreadsheet')], lambda n: ' CBB Picks (' in n)
-    power = newest(files, lambda n: ' CBB Power (' in n and n.endswith(' data.csv'))
-    sfiles = ls('1rdTY7B1p-srAPmahFR_dttjHOlHpTgFB')
-    conv = newest(sfiles, lambda n: n == 'dashboard_json.py')
-    d = os.path.join(TMP, 'cbb'); os.makedirs(d)
+    last = days[-1][0]
+    repo_power = sorted(os.listdir(os.path.join(repo_cbb, 'power'))) if os.path.isdir(os.path.join(repo_cbb, 'power')) else []
+    if repo_power:
+        power_path, pdate = os.path.join(repo_cbb, 'power', repo_power[-1]), date.fromisoformat(repo_power[-1][:10])
+    else:
+        power = newest(files, lambda n: ' CBB Power (' in n and n.endswith(' data.csv'))
+        power_path, pdate = download(power, os.path.join(d, 'power.csv')), title_date(power['name'], TODAY.year)
+    if os.path.exists(os.path.join(repo_cbb, 'picks', f'{last}.csv')):
+        title = f'{label} CBB Picks ({last.strftime("%b %d")})'
+        url = f'https://github.com/kfarris85/dashboard/blob/main/data/cbb/picks/{last}.csv'
+    else:
+        readable = newest([f for f in files if f['mimeType'].endswith('spreadsheet')], lambda n: ' CBB Picks (' in n)
+        title, url = readable['name'], readable['webViewLink']
+    conv = newest(ls('1rdTY7B1p-srAPmahFR_dttjHOlHpTgFB'), lambda n: n == 'dashboard_json.py')
     download(conv, os.path.join(d, 'dashboard_json.py'))   # byte size checked against Drive in download()
-    download(power, os.path.join(d, 'power.csv'))
-    pdate = title_date(power['name'], TODAY.year)
-    args = [sys.executable, '-I', os.path.join(d, 'dashboard_json.py'), os.path.join(d, 'out'), readable['name'], readable['webViewLink'],
-            pdate.isoformat(), os.path.join(d, 'power.csv')]
-    for dd, f in days:
-        args.append(download(f, os.path.join(d, f'picks_{dd}.csv')))
+    args = [sys.executable, '-I', os.path.join(d, 'dashboard_json.py'), os.path.join(d, 'out'), title, url, pdate.isoformat(), power_path]
+    args += [p for _, p in days]
     os.makedirs(os.path.join(d, 'out'))
     run(*args)
     block = json.load(open(os.path.join(d, 'out', 'cbb_block.json')))
