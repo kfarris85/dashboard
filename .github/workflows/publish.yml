@@ -1,0 +1,75 @@
+name: Dashboard Data Publish
+
+# Replaces the Claude scheduled task "Dashboard Data Publish".
+# MODE: 'shadow' builds everything and compares it with what's published, writing nothing.
+#       Switch to 'live' once shadow runs match.
+env:
+  MODE: shadow
+
+on:
+  schedule:
+    # 10:07, 11:07, 16:07, 17:07, 20:07 Central (UTC cron; an hour earlier during daylight saving)
+    - cron: '7 16,17,22,23 * * *'
+    - cron: '7 2 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'shadow (compare only) or live (publish)'
+        type: choice
+        options: [shadow, live]
+        default: shadow
+      force_all:
+        description: 'Ignore the once-a-day / day-of-week skip rules'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install
+        run: pip install --quiet google-auth requests pandas numpy pyarrow scipy
+
+      - name: Build (each step independent; failures reported at the end)
+        env:
+          GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
+          FORCE_ALL: ${{ inputs.force_all && '1' || '0' }}
+          RUN_MODE: ${{ inputs.mode || env.MODE }}
+        run: |
+          flag=""; [ "$RUN_MODE" = "shadow" ] && flag="--shadow"
+          echo "mode: $RUN_MODE"
+          python3 -I scripts/publish_data.py . $flag || echo "PUBLISH_FAILED=1" >> "$GITHUB_ENV"
+
+      - name: Commit and push whatever passed
+        if: (inputs.mode || env.MODE) == 'live'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/picks.json data/history.json data/nfl_ranks.json data/nba_ranks.json data/cfb_ranks.json data/cbb_ranks.json 2>/dev/null || true
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -m "Publish picks + history ($(TZ=America/Chicago date '+%Y-%m-%d %H:%M') CT) [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
+            sleep 10
+          done
+          exit 1
+
+      - name: Fail the run if any step failed (GitHub emails you)
+        if: env.PUBLISH_FAILED == '1'
+        run: |
+          echo "A step failed a check or couldn't read its source — see the build log. Its published file was kept."
+          exit 1
