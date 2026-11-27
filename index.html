@@ -355,6 +355,15 @@ a{color:var(--home)}
 .res{font:700 12px/1 var(--f-body);border-radius:4px;padding:4px 7px;min-width:26px;text-align:center}
 .res.W{background:var(--good-soft);color:var(--good)} .res.L{background:var(--bad-soft);color:var(--bad)}
 .hgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px;align-items:start}
+/* UFC */
+.uf-fight .chip.pick{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);font-weight:700}
+.uf-fight .chip.dis{border-color:var(--warn)}
+.uf-fight .trow{grid-template-columns:36px 1fr auto}
+.uf-fight .trow img{width:36px;height:36px;object-fit:cover;object-position:top;border-radius:50%;background:var(--panel2)}
+.uf-fight .tname b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.uf-ml{font:700 15px/1 var(--f-mono);color:var(--muted)}
+.uf-w{font:700 15px/1 var(--f-mono);color:var(--good);border:1px solid var(--good);background:var(--good-soft);border-radius:6px;padding:4px 8px}
+.uf-tape td,.uf-tape th{text-align:center} .uf-tape tbody th{font-weight:600;color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -400,7 +409,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-26-wxwarn1';
+const BUILD='2026-11-27-ufc1';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname,{cache:'no-cache'}); /* revalidates: unchanged page = tiny 304 reply */ if(!r.ok) return;
@@ -429,7 +438,7 @@ const STATES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California
 const WMO={0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Fog',51:'Drizzle',53:'Drizzle',55:'Drizzle',56:'Freezing drizzle',57:'Freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow',80:'Showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Snow showers',95:'Thunderstorms',96:'Thunderstorms',99:'Thunderstorms'};
 
 const store={get(k){try{return localStorage.getItem('mgc_'+k)}catch(e){return null}},set(k,v){try{localStorage.setItem('mgc_'+k,v)}catch(e){}}};
-const S={league:(LEAGUES[store.get('league')]||['hist','stars','mv','slip','props'].includes(store.get('league')))?store.get('league'):'nfl',hLg:'all',hRows:null,hLive:0,hBusy:false,filter:'all',date:null,week:null,seasontype:null,events:[],open:new Set(),sum:{},wx:{},geo:{},err:null,last:null,timer:null,tick:null,next:0,token:0,weekNum:null,moneyline:null,props:{lg:null,id:null,name:'',img:'',q:'',stat:null,lines:{},top:[],find:null,ctx:null,ctxKey:null,busy:false,err:null}};
+const S={league:(LEAGUES[store.get('league')]||['hist','stars','mv','slip','props','ufc'].includes(store.get('league')))?store.get('league'):'nfl',hLg:'all',hRows:null,hLive:0,hBusy:false,filter:'all',date:null,week:null,seasontype:null,events:[],open:new Set(),sum:{},wx:{},geo:{},err:null,last:null,timer:null,tick:null,next:0,token:0,weekNum:null,moneyline:null,props:{lg:null,id:null,name:'',img:'',q:'',stat:null,lines:{},top:[],find:null,ctx:null,ctxKey:null,busy:false,err:null}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
@@ -709,11 +718,11 @@ function visible(g){ if(S.q&&!matchGame(g,S.q)) return false; const p=findPick(g
   switch(S.filter){case 'live':return g.state==='in';case 'top':return (g.away.rank>0&&g.away.rank<=25)||(g.home.rank>0&&g.home.rank<=25);case 'best':return !!(p&&p.best);case 'dis':return !!(p&&p.agrees===false);case 'picked':return !!p;default:return true;} }
 function render(){
   const _tb=$('tabs'), _sl=_tb.scrollLeft;
-  $('tabs').innerHTML=Object.entries(LEAGUES).map(([k,v])=>`<button class="tab" role="tab" type="button" data-l="${k}" aria-selected="${k===S.league}">${v.label}${heatIcon(k)}</button>`).join('')+`<button class="tab hist-tab" role="tab" type="button" data-l="mv" aria-selected="${S.league==='mv'}">▦ Multiview${S.mv.length?` <span class="mvn">${S.mv.length}</span>`:''}</button><button class="tab hist-tab" role="tab" type="button" data-l="stars" aria-selected="${S.league==='stars'}">★ Today</button><button class="tab hist-tab" role="tab" type="button" data-l="slip" aria-selected="${S.league==='slip'}">${slipTabLabel()}</button><button class="tab hist-tab" role="tab" type="button" data-l="props" aria-selected="${S.league==='props'}">◎ Props</button><button class="tab hist-tab" role="tab" type="button" data-l="hist" aria-selected="${S.league==='hist'}">History</button>`;
+  $('tabs').innerHTML=Object.entries(LEAGUES).map(([k,v])=>`<button class="tab" role="tab" type="button" data-l="${k}" aria-selected="${k===S.league}">${v.label}${heatIcon(k)}</button>`).join('')+`<button class="tab" role="tab" type="button" data-l="ufc" aria-selected="${S.league==='ufc'}">UFC</button><button class="tab hist-tab" role="tab" type="button" data-l="mv" aria-selected="${S.league==='mv'}">▦ Multiview${S.mv.length?` <span class="mvn">${S.mv.length}</span>`:''}</button><button class="tab hist-tab" role="tab" type="button" data-l="stars" aria-selected="${S.league==='stars'}">★ Today</button><button class="tab hist-tab" role="tab" type="button" data-l="slip" aria-selected="${S.league==='slip'}">${slipTabLabel()}</button><button class="tab hist-tab" role="tab" type="button" data-l="props" aria-selected="${S.league==='props'}">◎ Props</button><button class="tab hist-tab" role="tab" type="button" data-l="hist" aria-selected="${S.league==='hist'}">History</button>`;
   _tb.scrollLeft=_sl; { const sel=_tb.querySelector('[aria-selected="true"]'); if(sel&&S._tabShown!==S.league){ S._tabShown=S.league; const r=sel.getBoundingClientRect(), R=_tb.getBoundingClientRect(); if(r.left<R.left+12||r.right>R.right-12) _tb.scrollLeft+=r.left-R.left-40; } }
-  const isH=S.league==='hist'||S.league==='stars'||S.league==='mv'||S.league==='slip'||S.league==='props';
+  const isH=S.league==='ufc'||S.league==='hist'||S.league==='stars'||S.league==='mv'||S.league==='slip'||S.league==='props';
   ['row2','summary','note','err','games','alerts','edgebar'].forEach(id=>{$(id).hidden=isH}); $('hist').hidden=!isH;
-  if(isH){ if(S.league==='stars') renderStars(); else if(S.league==='mv') renderMV(); else if(S.league==='slip') renderSlip(); else if(S.league==='props') renderProps(); else renderHistory(); return; }
+  if(isH){ if(S.league==='ufc') renderUFC(); else if(S.league==='stars') renderStars(); else if(S.league==='mv') renderMV(); else if(S.league==='slip') renderSlip(); else if(S.league==='props') renderProps(); else renderHistory(); return; }
   const L=LEAGUES[S.league];
   $('navlbl').textContent=L.nav==='day'?parseYmd(S.date||ymd(new Date())).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}):(S.weekNum!=null?'Week '+S.weekNum:'This week');
   document.querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===S.filter)));
@@ -862,13 +871,13 @@ function step(dir){
 }
 $('prev').onclick=()=>step(-1); $('next').onclick=()=>step(1);
 $('today').onclick=()=>{S.date=null;S.week=null;S.seasontype=null;S.events=[];S.open.clear();render();loadBoard();};
-$('refresh').onclick=()=>{ if(S.league==='props'){ S.props.ctx=null;S.props.ctxKey=null;loadProps();return; } if(S.league==='hist'){S.hRows=null;loadData().then(loadHistory);return;} if(S.league==='stars'){loadData().then(loadStars);return;} if(S.league==='mv'){loadMV(true);return;} S.sum={};loadBoard();};
-function wake(){ if(document.hidden) return; if(LEAGUES[S.league]&&(!S.last||Date.now()-S.last>20000)) loadBoard(); else if(S.league==='stars'&&(!S.stLast||Date.now()-S.stLast>20000)) loadStars(); else if(S.league==='mv'&&(!S.mvLast||Date.now()-S.mvLast>15000)) loadMV(); else if(S.league==='slip'&&(!S.slipLast||Date.now()-S.slipLast>30000)) loadSlip(); }
+$('refresh').onclick=()=>{ if(S.league==='ufc'){ loadUFC(); return; } if(S.league==='props'){ S.props.ctx=null;S.props.ctxKey=null;loadProps();return; } if(S.league==='hist'){S.hRows=null;loadData().then(loadHistory);return;} if(S.league==='stars'){loadData().then(loadStars);return;} if(S.league==='mv'){loadMV(true);return;} S.sum={};loadBoard();};
+function wake(){ if(document.hidden) return; if(LEAGUES[S.league]&&(!S.last||Date.now()-S.last>20000)) loadBoard(); else if(S.league==='ufc'&&(!S.ufLast||Date.now()-S.ufLast>20000)) loadUFC(); else if(S.league==='stars'&&(!S.stLast||Date.now()-S.stLast>20000)) loadStars(); else if(S.league==='mv'&&(!S.mvLast||Date.now()-S.mvLast>15000)) loadMV(); else if(S.league==='slip'&&(!S.slipLast||Date.now()-S.slipLast>30000)) loadSlip(); }
 document.addEventListener('visibilitychange',wake);
 window.addEventListener('focus',wake);
 window.addEventListener('pageshow',e=>{ if(e.persisted) wake(); });
 setInterval(()=>{ if(document.hidden) return; if(LEAGUES[S.league]&&S.last&&Date.now()-S.last>(S.events.some(g=>g.state==='in'||(g.state==='pre'&&g.date-Date.now()<90000&&Date.now()-g.date<3*36e5))?45000:150000)) loadBoard(); else if(S.league==='stars'&&S.stLast&&Date.now()-S.stLast>150000) loadStars(); else if(S.league==='mv'&&S.mvLast&&Date.now()-S.mvLast>(S.mvHot?45000:200000)) loadMV(); else if(S.league==='slip'&&S.slipLast&&Date.now()-S.slipLast>180000&&(S.slip.open.length||S.slip.legs.length)) loadSlip(); },15000);
-setInterval(()=>{ if(S.league==='hist'){ $('upd').textContent=S.hBusy?'Grading recent picks…':(S.dataUpdated?'Data updated '+S.dataUpdated:'Pick history'); return; } if(S.league==='stars'){ $('upd').textContent=S.stBusy?'Loading scores…':'★ Best Picks'; return; } if(S.league==='slip'){ $('upd').textContent='Play-money slip'; return; } if(S.league==='props'){ $('upd').textContent=S.props.busy?'Loading player…':'Player props'; return; } if(S.league==='mv'){ $('upd').textContent=S.mvLast?'Updated '+new Date(S.mvLast).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'})+(S.mvHot?' · live every 20s':''):'Multiview'; return; } if(!S.last) return; const s=Math.max(0,Math.round((S.next-Date.now())/1000));
+setInterval(()=>{ if(S.league==='ufc'){ $('upd').textContent=S.ufBusy?'Loading fights…':(S.ufLast?'Updated '+new Date(S.ufLast).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):'UFC'); return; } if(S.league==='hist'){ $('upd').textContent=S.hBusy?'Grading recent picks…':(S.dataUpdated?'Data updated '+S.dataUpdated:'Pick history'); return; } if(S.league==='stars'){ $('upd').textContent=S.stBusy?'Loading scores…':'★ Best Picks'; return; } if(S.league==='slip'){ $('upd').textContent='Play-money slip'; return; } if(S.league==='props'){ $('upd').textContent=S.props.busy?'Loading player…':'Player props'; return; } if(S.league==='mv'){ $('upd').textContent=S.mvLast?'Updated '+new Date(S.mvLast).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'})+(S.mvHot?' · live every 20s':''):'Multiview'; return; } if(!S.last) return; const s=Math.max(0,Math.round((S.next-Date.now())/1000));
   $('upd').textContent=`Updated ${S.last.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'})} · next in ${s}s`; },1000);
 
 /* ---------- search: games + players ---------- */
@@ -1238,10 +1247,11 @@ document.addEventListener('click',e=>{
 });
 
 /* ---------- pick history ---------- */
-const HLG={nfl:'NFL',cfb:'CFB',nba:'NBA',cbb:'CBB',mlb:'MLB'};
+const HLG={nfl:'NFL',cfb:'CFB',nba:'NBA',cbb:'CBB',mlb:'MLB',ufc:'UFC'};
 const hkey=(lg,d,a,h)=>lg+'|'+d+'|'+nrm(a)+'|'+nrm(h);
 const ynMap=v=>{v=String(v==null?'':v).trim(); return v==='✓'?'W':v==='✗'?'L':v==='P'?'P':v==='T'?'T':v==='='?'E':null;};
-function baseHistory(){
+function baseHistory(){ return baseHistory0().filter(r=>r.lg!=='ufc').concat(ufcHistRows()); }
+function baseHistory0(){
   if(S.histJson&&Array.isArray(S.histJson.rows)&&S.histJson.rows.length){
     return S.histJson.rows.map(r=>({lg:({ncaa:'cfb',ncaab:'cbb',cbb:'cbb'})[String(r.lg||'').toLowerCase()]||String(r.lg||'').toLowerCase(),date:r.date,away:r.away,home:r.home,pick:r.pick,win:+r.win,vegas:r.vegas===''||r.vegas==null?null:+r.vegas,best:!!r.best,final:r.final||'',
       res:ynMap(r.result)||'L',ats:ynMap(r.ats),ou:ynMap(r.ou),lean:r.lean||'',clv:r.clv===''||r.clv==null||isNaN(+r.clv)?null:+r.clv,beat:ynMap(r.beat),spreadPick:r.spreadPick||'',src:'tracker'})).filter(r=>r.lg&&r.date&&r.res!=='T');
@@ -1322,7 +1332,7 @@ function renderHistory(){
   </div>
   <div class="hgrid">
     <div class="panel"><h3>Model vs Vegas</h3><p class="sub">Agree = the model's pick is also the Vegas favorite. Disagree = the model picked the Vegas underdog.</p>${vegasTable(rows)}</div>
-    <div class="panel"><h3>Closing-line value</h3><p class="sub">${clvR.n?'Points (MLB: win-probability %) the line moved toward the model from pick time to close. Beating the close over time is the best sign the model has a real edge.':'No CLV graded yet for these picks. It fills in as the Season Tracker grades closing lines.'}</p>${clvR.n?clvTable(rows,clvStat):''}</div>
+    <div class="panel"><h3>Closing-line value</h3><p class="sub">${clvR.n?'Points (MLB and UFC: win-probability %) the line moved toward the model from pick time to close. Beating the close over time is the best sign the model has a real edge.':'No CLV graded yet for these picks. It fills in as the Season Tracker grades closing lines.'}</p>${clvR.n?clvTable(rows,clvStat):''}</div>
   </div>
   ${S.hLg==='all'?`<div class="panel"><h3>By sport</h3>${sportTable}</div>`:''}
   ${myPanelHTML()}
@@ -1332,7 +1342,8 @@ function renderHistory(){
 /* ---------- published data files (kept current by the scheduled publish task) ---------- */
 async function loadData(){
   const get=u=>fetch(u,{cache:'no-cache'}) /* revalidate with ETag: only changed files re-download */.then(r=>r.ok?r.json():null).catch(()=>null);
-  const [p,hj,nr,br,cr,kr,nd,kd,bd,fd,md,ml]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json'),get('data/nba_ranks.json'),get('data/cfb_ranks.json'),get('data/cbb_ranks.json'),get('data/nfl_dsplits.json'),get('data/cbb_dsplits.json'),get('data/nba_dsplits.json'),get('data/cfb_dsplits.json'),get('data/mlb_dsplits.json'),get('data/moneyline.json')]);
+  const [p,hj,nr,br,cr,kr,nd,kd,bd,fd,md,ml,uh]=await Promise.all([get('data/picks.json'),get('data/history.json'),get('data/nfl_ranks.json'),get('data/nba_ranks.json'),get('data/cfb_ranks.json'),get('data/cbb_ranks.json'),get('data/nfl_dsplits.json'),get('data/cbb_dsplits.json'),get('data/nba_dsplits.json'),get('data/cfb_dsplits.json'),get('data/mlb_dsplits.json'),get('data/moneyline.json'),get('data/ufc_history.json')]);
+  if(uh&&Array.isArray(uh.rows)){ S.ufcHist=uh; S.hRows=null; S._heatRows=null; }
   if(nr&&nr.teams) S.nflRanks=nr; if(br&&br.teams) S.nbaRanks=br; if(cr&&cr.teams) S.cfbRanks=cr; if(kr&&kr.teams) S.cbbRanks=kr;
   if(ml&&ml.games) S.moneyline=ml;
   S.dsp=S.dsp||{}; if(nd&&nd.teams) S.dsp.nfl=nd; if(kd&&kd.teams) S.dsp.cbb=kd; if(bd&&bd.teams) S.dsp.nba=bd; if(fd&&fd.teams) S.dsp.cfb=fd; if(md&&md.teams) S.dsp.mlb=md;
@@ -1340,7 +1351,7 @@ async function loadData(){
   if(hj&&Array.isArray(hj.rows)&&hj.rows.length){ S.histJson=hj; S.hRows=null; S._heatRows=null; }
   const u=(hj&&hj.updated)||(p&&p.updated); if(u){ try{ S.dataUpdated=new Date(u).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){} }
 }
-function openView(){ if(S.league==='props') loadProps(); else if(S.league==='hist') loadHistory(); else if(S.league==='stars') loadStars(); else if(S.league==='mv') loadMV(); else if(S.league==='slip') loadSlip(); else loadBoard(); }
+function openView(){ if(S.league==='ufc') loadUFC(); else if(S.league==='props') loadProps(); else if(S.league==='hist') loadHistory(); else if(S.league==='stars') loadStars(); else if(S.league==='mv') loadMV(); else if(S.league==='slip') loadSlip(); else loadBoard(); }
 
 /* ---------- line movement since the pick ---------- */
 function homeSpreadFrom(txt,g){
@@ -2491,6 +2502,103 @@ function renderStars(){
   const intro=`<div class="stars-intro"><div class="sub">Every ★ Best Pick from today through the next 3 days, across all your sports, grouped by day and ordered by tip. Tap any card for the same detail you see on the league tabs.</div>${S.stBusy?'<div class="sub muted">Loading live scores…</div>':''}</div>`;
   el.innerHTML=recapHTML()+tiles+intro+(rows.length?body:'<div class="empty">No ★ Best Picks in the next 3 days yet. They appear as soon as a model run publishes them.</div>');
 }
+
+/* ---------- UFC (fight cards + model from data/ufc.json, live status from ESPN) ---------- */
+const UFC_SB=API+'mma/ufc/scoreboard';
+const etYmd=d=>{ const p=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d); const g=t=>p.find(x=>x.type===t).value; return g('year')+g('month')+g('day'); };
+async function loadUFC(){
+  if(S.ufFlight) return; S.ufFlight=true; const tok=S.token; S.ufBusy=!S.ufc; if(S.league==='ufc') renderUFC();
+  try{
+    const r=await fetch('data/ufc.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null); if(r&&r.events) S.ufc=r;
+    const dates=new Set([''].concat(((S.ufc&&S.ufc.events)||[]).map(e=>etYmd(new Date(e.date)))));
+    const live=S.ufLive||{}; let err=null;
+    await Promise.all([...dates].map(async d=>{ try{ const j=await getJSON(UFC_SB+(d?'?dates='+d:''),15000);
+      for(const ev of j.events||[]) for(const c of ev.competitions||[]){ const st=c.status||{}, t=st.type||{};
+        live[String(c.id)]={state:t.state,detail:t.shortDetail||t.detail||'',period:st.period,clock:st.displayClock,date:new Date(c.date),ev:ev.name,
+          win:Object.fromEntries((c.competitors||[]).map(x=>[String(x.id),x.winner]))}; } }catch(e){ err=e; } }));
+    S.ufLive=live; S.ufErr=err&&!Object.keys(live).length?'Can’t reach ESPN for live fight status right now. Picks below are from the last model run.':null;
+  } finally { S.ufFlight=false; S.ufBusy=false; S.ufLast=Date.now(); }
+  if(tok!==S.token||S.league!=='ufc') return; renderUFC();
+  clearTimeout(S.ufTimer); const soon=Date.now()+15*60000;
+  const hot=Object.values(S.ufLive||{}).some(x=>x.state==='in'||(x.state==='pre'&&x.date<soon&&Date.now()-x.date<6*36e5));
+  S.ufTimer=setTimeout(()=>{ if(S.league==='ufc') loadUFC(); }, hot?30000:180000);
+}
+function ufState(f){ const L=(S.ufLive||{})[f.id]; return L?L:{state:f.state,detail:'',win:{[f.a.id]:f.a.winner,[f.b.id]:f.b.winner}}; }
+function ufPick(f){ return f.locked&&f.locked.pick?Object.assign({},f,f.locked):f; }
+function ufRes(f){ const L=ufState(f), P=ufPick(f); if(L.state!=='post'||!P.pick) return null;
+  const pid=P.pickId||(P.pick===f.a.name?f.a.id:f.b.id); const w=L.win||{};
+  if(w[f.a.id]!==true&&w[f.b.id]!==true) return 'push'; return w[pid]===true?'win':'loss'; }
+function ufVisible(f){ const P=ufPick(f);
+  if(S.q&&![f.a.name,f.b.name,f.wc].some(x=>String(x||'').toLowerCase().includes(S.q))) return false;
+  switch(S.ufFilter||'all'){ case 'best': return !!P.best; case 'value': return !!f.value; case 'dis': return P.agrees===false||(P.vegas!=null&&P.vegas<50); case 'live': return ufState(f).state==='in'; default: return true; } }
+const ufNum=(v,d=1,suf='')=>v==null||v===''||isNaN(v)?'—':(+v).toFixed(d)+suf;
+function ufTape(f){
+  const a=f.a,b=f.b; const r=(lab,x,y,better)=>{ let ca='',cb=''; if(better&&x!=null&&y!=null&&x!==y){ const ax=better==='hi'?x>y:x<y; ca=ax?'good':''; cb=ax?'':'good'; }
+    const fmt=v=>typeof v==='number'?v:esc(v??'—'); return `<tr><td class="${ca}">${fmt(x)}</td><th>${lab}</th><td class="${cb}">${fmt(y)}</td></tr>`; };
+  const n=(v,d,s)=>v==null?null:+(+v).toFixed(d)+(s||''), l3=x=>(x.last3&&x.last3.length)?x.last3.join(' '):'—';
+  return `<div class="detail"><div><h4>Tale of the tape</h4><div class="tbl"><table class="btable uf-tape"><thead><tr><th>${esc(a.short||a.name)}</th><th></th><th>${esc(b.short||b.name)}</th></tr></thead><tbody>
+    ${r('Record',a.rec,b.rec)}${r('Age',a.age,b.age,'lo')}${r('Height',a.hdisp,b.hdisp)}${r('Reach',a.reach!=null?a.reach+'"':null,b.reach!=null?b.reach+'"':null)}${r('Stance',a.stance,b.stance)}
+    ${r('Sig strikes / min',n(a.lpm,2),n(b.lpm,2),'hi')}${r('Strike accuracy',n(a.acc,0,'%'),n(b.acc,0,'%'))}${r('Takedowns / 15',n(a.td,2),n(b.td,2),'hi')}${r('Sub attempts / 15',n(a.sub,2),n(b.sub,2),'hi')}
+    ${r('KO/TKO rate',n(a.ko,0,'%'),n(b.ko,0,'%'))}${r('Decision rate',n(a.dec,0,'%'),n(b.dec,0,'%'))}${r('Last 3 (newest first)',l3(a),l3(b))}${r('Camp',a.camp,b.camp)}
+  </tbody></table></div><p class="sub" style="margin:6px 0 0">Stats are ESPN's career UFC numbers. A dash means ESPN has no UFC stats yet (debut or thin history), so the model leans on record, age and reach for that fighter.</p></div></div>`;
+}
+function ufRow(t,f,P,L){
+  const lost=L.state==='post'&&L.win&&L.win[t.id]===false&&Object.values(L.win).some(v=>v===true);
+  const isPick=P.pick&&P.pick===t.name; const side=t.id===f.a.id?'a':'b';
+  const img=t.head?`<img src="${esc(t.head)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${esc(t.flag||'')}'">`:t.flag?`<img src="${esc(t.flag)}" alt="" loading="lazy">`:'<span></span>';
+  const right=L.state==='post'?(L.win&&L.win[t.id]===true?'<span class="uf-w">W</span>':''):(f.ml&&f.ml[side]?`<span class="uf-ml">${esc(f.ml[side])}</span>`:'');
+  return `<div class="trow ${lost?'lose':''}">${img}<div class="tname"><b>${esc(t.name)}</b><span class="rec">${esc(t.rec||'')}${t.country?' · '+esc(t.country):''}</span>${isPick?'<span class="pk">Model pick</span>':''}</div><div class="score">${right}</div></div>`;
+}
+function ufCard(f){
+  const L=ufState(f), P=ufPick(f), open=(S.ufOpen||new Set()).has(f.id), res=ufRes(f);
+  const status=L.state==='pre'?fmtKick(new Date(f.date)):L.state==='in'?(L.detail||'Live'):(f.final||L.detail||'Final');
+  const tag=[f.main?'Main event':f.co?'Co-main':'',f.wc,f.rounds+' rds'].filter(Boolean).join(' · ');
+  const ou=f.ou; const chips=[];
+  if(P.pick){ chips.push(`<span class="chip pick">${P.best?'★ ':''}${esc(P.pick.split(' ').slice(-1)[0])} <b>${Math.round(P.win)}%</b></span>`);
+    if(P.vegas!=null) chips.push(`<span class="chip">Vegas ${Math.round(P.vegas)}%</span>`);
+    if(f.conf&&L.state==='pre') chips.push(`<span class="chip">${esc(f.conf)}</span>`);
+    if(f.value) chips.push('<span class="chip win" title="Model price is 8–20 pts above the no-vig line">Value</span>');
+    else if(P.vegas!=null&&P.vegas<50) chips.push('<span class="chip dis">Disagrees with Vegas</span>');
+    if(ou&&ou.line) chips.push(`<span class="chip" title="Model ${ou.p}% to go past ${ou.line} rounds vs market ${ou.mkt??'—'}%">${esc(ou.lean)} ${ou.line} rds</span>`);
+    if(f.method&&f.method!=='Any way'&&L.state!=='post') chips.push(`<span class="chip">by ${esc(f.method)}</span>`);
+    if(res) chips.push(`<span class="chip ${res}">Model ${res==='win'?'W':res==='loss'?'L':'push'}</span>`); }
+  return `<article class="game s-${L.state||'pre'} uf-fight" data-ufid="${esc(f.id)}">
+  <div class="g-top"><span class="status">${esc(status)}</span><span class="g-tr"><span>${esc(tag)}</span></span></div>
+  <div class="teams">${ufRow(f.a,f,P,L)}${ufRow(f.b,f,P,L)}</div>
+  ${P.pick?`<div class="model"><div class="chips">${chips.join('')}</div>${f.why&&L.state==='pre'?`<p class="why">${esc(f.why)}</p>`:''}</div>`:'<div class="model"><p class="why muted">No model pick yet (fighter data still loading on ESPN).</p></div>'}
+  <div class="meta">${f.ml&&f.ml.a?`<span>${esc(f.book||'Book')} ML ${esc(f.a.short||f.a.name)} ${esc(f.ml.a)} / ${esc(f.b.short||f.b.name)} ${esc(f.ml.b)}</span>`:''}${ou&&ou.line?`<span>O/U ${ou.line} rds (${esc(ou.over||'')}/${esc(ou.under||'')})</span>`:''}</div>
+  <button class="more" type="button" data-ufm="${esc(f.id)}" aria-expanded="${open}">${open?'Hide tale of the tape':'Tale of the tape'}</button>
+  ${open?ufTape(f):''}
+  </article>`;
+}
+function renderUFC(){
+  const el=$('hist'); const U=S.ufc;
+  if(!U){ el.innerHTML=`<div class="empty" style="margin-top:14px">${S.ufBusy?'Loading UFC cards…':'No UFC model data published yet. It fills in after the first “UFC Model Publish” run on GitHub.'}</div>`; return; }
+  const all=U.events.flatMap(e=>e.fights); const P=all.map(ufPick);
+  const live=all.filter(f=>ufState(f).state==='in').length; const best=P.filter(p=>p.best).length;
+  const fin=all.map(f=>({f,r:ufRes(f),b:ufPick(f).best})).filter(x=>x.r==='win'||x.r==='loss');
+  const w=fin.filter(x=>x.r==='win').length, bf=fin.filter(x=>x.b), bw=bf.filter(x=>x.r==='win').length;
+  const hr=ufcHistRows(); const hw=hr.filter(r=>r.res==='W').length;
+  const tile=(k,v,s)=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`;
+  const tiles=`<div class="summary" style="padding-inline:0">${tile('Live now',live||'—',`${all.length} fights listed`)}${tile('★ Best picks',best||'—',best?'on these cards':'none flagged')}${tile('These cards',fin.length?`${w}–${fin.length-w}`:'—',fin.length?'model, straight up':'none final yet')}${tile('★ on these cards',bf.length?`${bw}–${bf.length-bw}`:'—','straight up')}${tile('All-time UFC',hr.length?`${hw}–${hr.length-hw}`:'—',hr.length?'graded picks · see History':'grades after the first card')}</div>`;
+  const fl=S.ufFilter||'all'; const chips=[['all','All fights'],['best','★ Best'],['value','Value'],['dis','Model vs Vegas'],['live','Live']].map(([k,v])=>`<button class="fchip" type="button" data-uf="${k}" aria-pressed="${k===fl}">${v}</button>`).join('');
+  let body='';
+  for(const e of U.events){ const fs=e.fights.filter(ufVisible); if(!fs.length) continue; const d=new Date(e.date); const lv=fs.filter(f=>ufState(f).state==='in').length;
+    body+=`<div class="day-head"><span class="day-name">${esc(e.name)}</span><span class="day-meta">${d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})}${lv?` · ${lv} live`:''}</span></div><p class="sub muted" style="margin:-4px 2px 10px">${[e.venue,e.city,e.tv].filter(Boolean).map(esc).join(' · ')}</p><div class="games">${fs.map(ufCard).join('')}</div>`; }
+  const upd=U.updated?new Date(U.updated).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+  el.innerHTML=`${S.ufErr?`<div class="err" style="margin-top:14px">${esc(S.ufErr)}</div>`:''}${tiles}<div class="hchips">${chips}</div>
+  <div class="note"><span>Model run ${esc(upd)} (GitHub Action, refreshes daily and every 2 hrs on fight night)</span><span>Fights &amp; odds: ESPN / DraftKings</span><span>${esc(U.model||'')}</span></div>
+  ${body||`<div class="empty">${all.length?'No fights match this filter.':'No UFC cards in the next 10 days.'}</div>`}`;
+}
+function ufcHistRows(){ const H=S.ufcHist; if(!H||!Array.isArray(H.rows)) return [];
+  return H.rows.filter(r=>r.result==='✓'||r.result==='✗').map(r=>({lg:'ufc',date:r.date,away:r.away,home:r.home,pick:r.pick,win:+r.win,vegas:r.vegas==null||r.vegas===''?null:+r.vegas,best:!!r.best,final:r.final||'',
+    res:r.result==='✓'?'W':'L',ats:null,ou:ynMap(r.ou),lean:r.lean||'',clv:r.clv===''||r.clv==null||isNaN(+r.clv)?null:+r.clv,beat:ynMap(r.beat),spreadPick:'',src:'ufc'})); }
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-uf],[data-ufm]'); if(!t) return;
+  if(t.dataset.uf){ S.ufFilter=t.dataset.uf; renderUFC(); return; }
+  const id=t.dataset.ufm; S.ufOpen=S.ufOpen||new Set(); if(S.ufOpen.has(id)) S.ufOpen.delete(id); else S.ufOpen.add(id);
+  const all=(S.ufc&&S.ufc.events||[]).flatMap(e=>e.fights); const f=all.find(x=>x.id===id); const el=document.querySelector('[data-ufid="'+id+'"]'); if(f&&el) el.outerHTML=ufCard(f);
+});
 
 loadData().then(()=>{ render(); openView(); });
 render();
