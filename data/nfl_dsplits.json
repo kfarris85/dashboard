@@ -1,39 +1,39 @@
 {
- "updated": "2026-11-25T07:49:46-06:00",
+ "updated": "2026-11-27T07:48:36-06:00",
  "season": 2026,
- "through_week": 11,
+ "through_week": 12,
  "source": "nflfastR play-by-play, schedule-adjusted (nfl_dsplits.py)",
  "n": 32,
  "cats": {
   "pass_yds": {
    "label": "pass yards allowed per game",
    "lowerBetter": true,
-   "lg": 219.049
+   "lg": 218.376
   },
   "rush_yds": {
    "label": "rush yards allowed per game",
    "lowerBetter": true,
-   "lg": 113.342
+   "lg": 113.864
   },
   "cmp": {
    "label": "completions allowed per game",
    "lowerBetter": true,
-   "lg": 21.052
+   "lg": 20.98
   },
   "pass_td": {
    "label": "passing TDs allowed per game",
    "lowerBetter": true,
-   "lg": 1.532
+   "lg": 1.518
   },
   "rush_td": {
    "label": "rushing TDs allowed per game",
    "lowerBetter": true,
-   "lg": 0.947
+   "lg": 0.957
   },
   "sack": {
    "label": "sacks per game",
    "lowerBetter": false,
-   "lg": 2.409
+   "lg": 2.413
   },
   "takeaway": {
    "label": "takeaways per game",
@@ -43,141 +43,141 @@
   "pass_epa": {
    "label": "EPA allowed per dropback",
    "lowerBetter": true,
-   "lg": 0.023
+   "lg": 0.021
   },
   "rush_epa": {
    "label": "EPA allowed per rush",
    "lowerBetter": true,
-   "lg": -0.009
+   "lg": -0.008
   },
   "plays": {
    "label": "scrimmage plays faced per game",
    "lowerBetter": true,
-   "lg": 62.206
+   "lg": 62.141
   }
  },
  "teams": {
   "ARI": {
    "pass_yds": {
     "v": 226.364,
-    "adj": 212.185,
-    "rank": 9
+    "adj": 214.102,
+    "rank": 11
    },
    "rush_yds": {
     "v": 129.727,
-    "adj": 120.723,
-    "rank": 21
+    "adj": 118.725,
+    "rank": 20
    },
    "cmp": {
     "v": 19.182,
-    "adj": 18.644,
+    "adj": 18.802,
     "rank": 4
    },
    "pass_td": {
     "v": 2.273,
-    "adj": 2.035,
+    "adj": 2.081,
     "rank": 29
    },
    "rush_td": {
     "v": 1.091,
-    "adj": 0.931,
-    "rank": 16
+    "adj": 0.902,
+    "rank": 14
    },
    "sack": {
     "v": 2.0,
-    "adj": 2.439,
-    "rank": 14
+    "adj": 2.452,
+    "rank": 15
    },
    "takeaway": {
     "v": 0.727,
-    "adj": 0.731,
-    "rank": 31
+    "adj": 0.742,
+    "rank": 30
    },
    "pass_epa": {
     "v": 0.246,
-    "adj": 0.176,
+    "adj": 0.178,
     "rank": 30
    },
    "rush_epa": {
     "v": -0.018,
     "adj": -0.038,
-    "rank": 7
+    "rank": 6
    },
    "plays": {
     "v": 62.273,
-    "adj": 61.057,
-    "rank": 12
+    "adj": 61.0,
+    "rank": 11
    },
    "g": 11
   },
   "ATL": {
    "pass_yds": {
     "v": 239.1,
-    "adj": 224.372,
-    "rank": 18
+    "adj": 224.573,
+    "rank": 20
    },
    "rush_yds": {
     "v": 120.3,
-    "adj": 116.674,
+    "adj": 117.857,
     "rank": 19
    },
    "cmp": {
     "v": 23.2,
-    "adj": 21.804,
-    "rank": 19
+    "adj": 21.782,
+    "rank": 20
    },
    "pass_td": {
     "v": 1.9,
-    "adj": 1.692,
+    "adj": 1.7,
     "rank": 24
    },
    "rush_td": {
     "v": 1.0,
-    "adj": 0.9,
+    "adj": 0.905,
     "rank": 15
    },
    "sack": {
     "v": 2.1,
-    "adj": 2.103,
+    "adj": 2.107,
     "rank": 22
    },
    "takeaway": {
     "v": 1.1,
-    "adj": 1.072,
+    "adj": 1.074,
     "rank": 23
    },
    "pass_epa": {
     "v": 0.076,
-    "adj": 0.032,
-    "rank": 15
+    "adj": 0.034,
+    "rank": 16
    },
    "rush_epa": {
     "v": -0.019,
-    "adj": -0.033,
-    "rank": 12
+    "adj": -0.034,
+    "rank": 9
    },
    "plays": {
     "v": 64.3,
-    "adj": 63.298,
-    "rank": 18
+    "adj": 63.481,
+    "rank": 22
    },
    "g": 10
   },
   "BAL": {
    "pass_yds": {
     "v": 220.545,
-    "adj": 217.124,
-    "rank": 13
+    "adj": 217.963,
+    "rank": 14
    },
    "rush_yds": {
     "v": 110.182,
-    "adj": 112.261,
+    "adj": 112.312,
     "rank": 16
    },
    "cmp": {
     "v": 20.091,
-    "adj": 19.678,
-    "rank": 11
+    "adj": 19.731,
+    "rank": 12
    },
    "pass_td": {
     "v": 1.273,
@@ -186,225 +186,225 @@
    },
    "rush_td": {
     "v": 1.455,
-    "adj": 1.368,
+    "adj": 1.374,
     "rank": 29
    },
    "sack": {
     "v": 2.0,
-    "adj": 1.899,
+    "adj": 1.891,
     "rank": 28
    },
    "takeaway": {
     "v": 1.0,
-    "adj": 0.857,
+    "adj": 0.852,
     "rank": 29
    },
    "pass_epa": {
     "v": 0.058,
-    "adj": 0.072,
+    "adj": 0.073,
     "rank": 24
    },
    "rush_epa": {
     "v": -0.018,
-    "adj": -0.027,
+    "adj": -0.026,
     "rank": 13
    },
    "plays": {
     "v": 61.364,
-    "adj": 61.195,
+    "adj": 61.099,
     "rank": 14
    },
    "g": 11
   },
   "BUF": {
    "pass_yds": {
-    "v": 226.3,
-    "adj": 229.649,
-    "rank": 21
+    "v": 220.909,
+    "adj": 220.863,
+    "rank": 17
    },
    "rush_yds": {
-    "v": 94.4,
-    "adj": 93.835,
-    "rank": 5
+    "v": 92.545,
+    "adj": 89.248,
+    "rank": 4
    },
    "cmp": {
-    "v": 21.9,
-    "adj": 22.579,
-    "rank": 24
+    "v": 21.364,
+    "adj": 21.879,
+    "rank": 22
    },
    "pass_td": {
-    "v": 1.5,
-    "adj": 1.527,
-    "rank": 16
+    "v": 1.364,
+    "adj": 1.356,
+    "rank": 12
    },
    "rush_td": {
-    "v": 0.7,
-    "adj": 0.82,
-    "rank": 11
+    "v": 0.727,
+    "adj": 0.814,
+    "rank": 10
    },
    "sack": {
-    "v": 2.3,
-    "adj": 2.213,
+    "v": 2.182,
+    "adj": 2.224,
     "rank": 19
    },
    "takeaway": {
-    "v": 1.6,
-    "adj": 1.604,
-    "rank": 7
+    "v": 1.455,
+    "adj": 1.525,
+    "rank": 8
    },
    "pass_epa": {
-    "v": -0.044,
-    "adj": -0.04,
+    "v": -0.041,
+    "adj": -0.05,
     "rank": 8
    },
    "rush_epa": {
-    "v": -0.007,
-    "adj": 0.012,
-    "rank": 21
+    "v": -0.011,
+    "adj": -0.002,
+    "rank": 18
    },
    "plays": {
-    "v": 62.9,
-    "adj": 63.655,
-    "rank": 23
+    "v": 61.727,
+    "adj": 62.365,
+    "rank": 15
    },
-   "g": 10
+   "g": 11
   },
   "CAR": {
    "pass_yds": {
     "v": 212.9,
-    "adj": 221.942,
+    "adj": 219.795,
     "rank": 16
    },
    "rush_yds": {
     "v": 127.9,
-    "adj": 126.534,
-    "rank": 26
+    "adj": 126.319,
+    "rank": 25
    },
    "cmp": {
     "v": 22.5,
-    "adj": 22.754,
-    "rank": 26
+    "adj": 22.633,
+    "rank": 28
    },
    "pass_td": {
     "v": 1.4,
-    "adj": 1.652,
+    "adj": 1.631,
     "rank": 21
    },
    "rush_td": {
     "v": 1.6,
-    "adj": 1.44,
+    "adj": 1.429,
     "rank": 31
    },
    "sack": {
     "v": 1.7,
-    "adj": 1.513,
+    "adj": 1.51,
     "rank": 32
    },
    "takeaway": {
     "v": 1.8,
-    "adj": 1.672,
+    "adj": 1.666,
     "rank": 6
    },
    "pass_epa": {
     "v": 0.027,
-    "adj": 0.064,
-    "rank": 22
+    "adj": 0.062,
+    "rank": 21
    },
    "rush_epa": {
     "v": -0.003,
-    "adj": 0.019,
-    "rank": 24
+    "adj": 0.015,
+    "rank": 21
    },
    "plays": {
     "v": 64.3,
-    "adj": 63.998,
-    "rank": 25
+    "adj": 64.09,
+    "rank": 26
    },
    "g": 10
   },
   "CHI": {
    "pass_yds": {
-    "v": 216.5,
-    "adj": 228.036,
-    "rank": 20
+    "v": 223.0,
+    "adj": 228.438,
+    "rank": 22
    },
    "rush_yds": {
-    "v": 94.2,
-    "adj": 97.449,
-    "rank": 7
-   },
-   "cmp": {
-    "v": 18.6,
-    "adj": 19.306,
-    "rank": 7
-   },
-   "pass_td": {
-    "v": 1.4,
-    "adj": 1.506,
+    "v": 108.0,
+    "adj": 109.009,
     "rank": 14
    },
+   "cmp": {
+    "v": 19.182,
+    "adj": 19.618,
+    "rank": 11
+   },
+   "pass_td": {
+    "v": 1.364,
+    "adj": 1.403,
+    "rank": 13
+   },
    "rush_td": {
-    "v": 0.8,
-    "adj": 0.941,
-    "rank": 18
+    "v": 1.0,
+    "adj": 1.088,
+    "rank": 21
    },
    "sack": {
-    "v": 3.2,
-    "adj": 2.879,
-    "rank": 5
+    "v": 3.0,
+    "adj": 2.739,
+    "rank": 7
    },
    "takeaway": {
-    "v": 1.3,
-    "adj": 1.096,
+    "v": 1.273,
+    "adj": 1.125,
     "rank": 22
    },
    "pass_epa": {
-    "v": -0.071,
-    "adj": -0.015,
+    "v": -0.062,
+    "adj": -0.03,
     "rank": 10
    },
    "rush_epa": {
-    "v": -0.019,
-    "adj": 0.014,
-    "rank": 22
+    "v": 0.02,
+    "adj": 0.043,
+    "rank": 31
    },
    "plays": {
-    "v": 54.2,
-    "adj": 54.664,
+    "v": 55.455,
+    "adj": 55.731,
     "rank": 1
    },
-   "g": 10
+   "g": 11
   },
   "CIN": {
    "pass_yds": {
     "v": 222.4,
-    "adj": 241.142,
+    "adj": 240.469,
     "rank": 28
    },
    "rush_yds": {
     "v": 127.1,
-    "adj": 120.944,
+    "adj": 121.466,
     "rank": 22
    },
    "cmp": {
     "v": 21.3,
-    "adj": 22.604,
-    "rank": 25
+    "adj": 22.532,
+    "rank": 27
    },
    "pass_td": {
     "v": 1.1,
-    "adj": 1.262,
-    "rank": 8
+    "adj": 1.248,
+    "rank": 7
    },
    "rush_td": {
     "v": 0.9,
-    "adj": 1.03,
-    "rank": 21
+    "adj": 1.04,
+    "rank": 20
    },
    "sack": {
     "v": 2.9,
-    "adj": 2.873,
-    "rank": 6
+    "adj": 2.877,
+    "rank": 5
    },
    "takeaway": {
     "v": 1.3,
@@ -413,388 +413,388 @@
    },
    "pass_epa": {
     "v": -0.015,
-    "adj": 0.048,
+    "adj": 0.046,
     "rank": 20
    },
    "rush_epa": {
     "v": 0.049,
-    "adj": 0.022,
-    "rank": 26
+    "adj": 0.023,
+    "rank": 25
    },
    "plays": {
     "v": 61.9,
-    "adj": 63.248,
-    "rank": 17
+    "adj": 63.183,
+    "rank": 18
    },
    "g": 10
   },
   "CLE": {
    "pass_yds": {
     "v": 201.1,
-    "adj": 209.249,
-    "rank": 8
+    "adj": 208.576,
+    "rank": 9
    },
    "rush_yds": {
     "v": 126.9,
-    "adj": 126.261,
-    "rank": 25
+    "adj": 126.782,
+    "rank": 26
    },
    "cmp": {
     "v": 19.7,
-    "adj": 19.557,
-    "rank": 9
+    "adj": 19.486,
+    "rank": 8
    },
    "pass_td": {
     "v": 1.5,
-    "adj": 1.516,
-    "rank": 15
+    "adj": 1.502,
+    "rank": 16
    },
    "rush_td": {
     "v": 0.8,
-    "adj": 0.935,
+    "adj": 0.945,
     "rank": 17
    },
    "sack": {
     "v": 2.7,
-    "adj": 2.483,
-    "rank": 13
+    "adj": 2.487,
+    "rank": 14
    },
    "takeaway": {
     "v": 1.2,
     "adj": 1.311,
-    "rank": 16
+    "rank": 17
    },
    "pass_epa": {
     "v": -0.027,
-    "adj": -0.003,
+    "adj": -0.005,
     "rank": 12
    },
    "rush_epa": {
     "v": 0.009,
-    "adj": -0.008,
+    "adj": -0.007,
     "rank": 16
    },
    "plays": {
     "v": 63.5,
-    "adj": 63.515,
+    "adj": 63.45,
     "rank": 21
    },
    "g": 10
   },
   "DAL": {
    "pass_yds": {
-    "v": 237.909,
-    "adj": 250.019,
+    "v": 243.167,
+    "adj": 256.514,
     "rank": 31
    },
    "rush_yds": {
-    "v": 152.364,
-    "adj": 154.346,
+    "v": 145.417,
+    "adj": 150.17,
     "rank": 32
    },
    "cmp": {
-    "v": 21.545,
-    "adj": 21.995,
-    "rank": 22
+    "v": 21.5,
+    "adj": 22.029,
+    "rank": 24
    },
    "pass_td": {
-    "v": 1.909,
-    "adj": 2.068,
+    "v": 2.0,
+    "adj": 2.153,
     "rank": 31
    },
    "rush_td": {
-    "v": 1.364,
-    "adj": 1.39,
+    "v": 1.333,
+    "adj": 1.375,
     "rank": 30
    },
    "sack": {
-    "v": 2.455,
-    "adj": 2.398,
-    "rank": 15
+    "v": 2.667,
+    "adj": 2.53,
+    "rank": 12
    },
    "takeaway": {
-    "v": 0.818,
-    "adj": 0.861,
-    "rank": 28
+    "v": 0.833,
+    "adj": 0.876,
+    "rank": 26
    },
    "pass_epa": {
-    "v": 0.158,
-    "adj": 0.192,
-    "rank": 31
+    "v": 0.169,
+    "adj": 0.207,
+    "rank": 32
    },
    "rush_epa": {
-    "v": 0.058,
-    "adj": 0.069,
+    "v": 0.046,
+    "adj": 0.063,
     "rank": 32
    },
    "plays": {
-    "v": 64.0,
-    "adj": 64.73,
-    "rank": 29
+    "v": 63.167,
+    "adj": 64.205,
+    "rank": 27
    },
-   "g": 11
+   "g": 12
   },
   "DEN": {
    "pass_yds": {
     "v": 230.3,
-    "adj": 214.36,
-    "rank": 11
+    "adj": 216.521,
+    "rank": 12
    },
    "rush_yds": {
     "v": 126.8,
-    "adj": 122.449,
+    "adj": 123.112,
     "rank": 23
    },
    "cmp": {
     "v": 22.5,
-    "adj": 21.931,
-    "rank": 21
+    "adj": 22.061,
+    "rank": 25
    },
    "pass_td": {
     "v": 1.7,
-    "adj": 1.376,
-    "rank": 12
+    "adj": 1.419,
+    "rank": 15
    },
    "rush_td": {
     "v": 0.6,
-    "adj": 0.606,
-    "rank": 4
+    "adj": 0.61,
+    "rank": 5
    },
    "sack": {
     "v": 3.1,
-    "adj": 3.377,
+    "adj": 3.391,
     "rank": 3
    },
    "takeaway": {
     "v": 1.4,
-    "adj": 1.49,
-    "rank": 10
+    "adj": 1.506,
+    "rank": 9
    },
    "pass_epa": {
     "v": -0.023,
-    "adj": -0.091,
-    "rank": 5
+    "adj": -0.089,
+    "rank": 6
    },
    "rush_epa": {
     "v": 0.041,
-    "adj": 0.027,
-    "rank": 29
+    "adj": 0.03,
+    "rank": 28
    },
    "plays": {
     "v": 68.4,
-    "adj": 67.84,
+    "adj": 67.975,
     "rank": 32
    },
    "g": 10
   },
   "DET": {
    "pass_yds": {
-    "v": 233.1,
-    "adj": 242.597,
-    "rank": 29
+    "v": 240.273,
+    "adj": 248.401,
+    "rank": 30
    },
    "rush_yds": {
-    "v": 94.3,
-    "adj": 95.981,
+    "v": 99.0,
+    "adj": 98.231,
     "rank": 6
    },
    "cmp": {
-    "v": 23.8,
-    "adj": 24.313,
+    "v": 24.364,
+    "adj": 24.687,
     "rank": 31
    },
    "pass_td": {
-    "v": 2.1,
-    "adj": 2.249,
+    "v": 2.091,
+    "adj": 2.256,
     "rank": 32
    },
    "rush_td": {
-    "v": 0.7,
-    "adj": 0.785,
-    "rank": 10
+    "v": 0.909,
+    "adj": 0.931,
+    "rank": 16
    },
    "sack": {
-    "v": 3.6,
-    "adj": 3.237,
+    "v": 3.636,
+    "adj": 3.328,
     "rank": 4
    },
    "takeaway": {
-    "v": 0.9,
-    "adj": 0.796,
-    "rank": 30
+    "v": 0.909,
+    "adj": 0.732,
+    "rank": 31
    },
    "pass_epa": {
-    "v": 0.092,
+    "v": 0.093,
     "adj": 0.126,
-    "rank": 29
-   },
-   "rush_epa": {
-    "v": -0.024,
-    "adj": -0.011,
-    "rank": 15
-   },
-   "plays": {
-    "v": 64.4,
-    "adj": 64.557,
     "rank": 28
    },
-   "g": 10
+   "rush_epa": {
+    "v": 0.01,
+    "adj": 0.018,
+    "rank": 22
+   },
+   "plays": {
+    "v": 65.091,
+    "adj": 64.632,
+    "rank": 29
+   },
+   "g": 11
   },
   "GB": {
    "pass_yds": {
-    "v": 210.8,
-    "adj": 216.086,
-    "rank": 12
-   },
-   "rush_yds": {
-    "v": 111.7,
-    "adj": 102.518,
-    "rank": 13
-   },
-   "cmp": {
-    "v": 22.4,
-    "adj": 22.927,
-    "rank": 28
-   },
-   "pass_td": {
-    "v": 1.5,
-    "adj": 1.589,
-    "rank": 18
-   },
-   "rush_td": {
-    "v": 1.2,
-    "adj": 1.164,
-    "rank": 24
-   },
-   "sack": {
-    "v": 2.9,
-    "adj": 2.822,
+    "v": 203.636,
+    "adj": 204.892,
     "rank": 8
    },
+   "rush_yds": {
+    "v": 123.455,
+    "adj": 111.59,
+    "rank": 15
+   },
+   "cmp": {
+    "v": 21.818,
+    "adj": 21.906,
+    "rank": 23
+   },
+   "pass_td": {
+    "v": 1.364,
+    "adj": 1.416,
+    "rank": 14
+   },
+   "rush_td": {
+    "v": 1.273,
+    "adj": 1.183,
+    "rank": 25
+   },
+   "sack": {
+    "v": 2.727,
+    "adj": 2.73,
+    "rank": 9
+   },
    "takeaway": {
-    "v": 2.0,
-    "adj": 1.926,
+    "v": 1.909,
+    "adj": 1.832,
     "rank": 2
    },
    "pass_epa": {
-    "v": -0.038,
-    "adj": -0.013,
+    "v": -0.041,
+    "adj": -0.026,
     "rank": 11
    },
    "rush_epa": {
-    "v": -0.022,
-    "adj": -0.037,
-    "rank": 9
+    "v": -0.012,
+    "adj": -0.035,
+    "rank": 8
    },
    "plays": {
-    "v": 66.0,
-    "adj": 65.52,
+    "v": 66.455,
+    "adj": 65.352,
     "rank": 30
    },
-   "g": 10
+   "g": 11
   },
   "HOU": {
    "pass_yds": {
     "v": 229.4,
-    "adj": 231.774,
-    "rank": 23
+    "adj": 232.764,
+    "rank": 25
    },
    "rush_yds": {
     "v": 96.5,
-    "adj": 98.413,
-    "rank": 8
+    "adj": 98.418,
+    "rank": 7
    },
    "cmp": {
     "v": 21.5,
-    "adj": 21.609,
+    "adj": 21.675,
     "rank": 17
    },
    "pass_td": {
     "v": 1.2,
-    "adj": 1.308,
+    "adj": 1.309,
     "rank": 11
    },
    "rush_td": {
     "v": 1.2,
-    "adj": 1.101,
-    "rank": 23
+    "adj": 1.107,
+    "rank": 22
    },
    "sack": {
     "v": 3.5,
-    "adj": 3.403,
+    "adj": 3.395,
     "rank": 2
    },
    "takeaway": {
     "v": 1.0,
-    "adj": 0.874,
-    "rank": 26
+    "adj": 0.869,
+    "rank": 27
    },
    "pass_epa": {
     "v": -0.001,
-    "adj": 0.015,
-    "rank": 13
+    "adj": 0.017,
+    "rank": 14
    },
    "rush_epa": {
     "v": -0.03,
-    "adj": -0.038,
-    "rank": 8
+    "adj": -0.036,
+    "rank": 7
    },
    "plays": {
     "v": 62.9,
-    "adj": 62.924,
-    "rank": 16
+    "adj": 62.825,
+    "rank": 17
    },
    "g": 10
   },
   "IND": {
    "pass_yds": {
     "v": 220.455,
-    "adj": 218.787,
-    "rank": 14
+    "adj": 218.949,
+    "rank": 15
    },
    "rush_yds": {
     "v": 135.273,
-    "adj": 136.552,
+    "adj": 137.254,
     "rank": 29
    },
    "cmp": {
     "v": 18.273,
-    "adj": 18.454,
+    "adj": 18.483,
     "rank": 2
    },
    "pass_td": {
     "v": 1.818,
-    "adj": 1.726,
-    "rank": 25
+    "adj": 1.732,
+    "rank": 26
    },
    "rush_td": {
     "v": 0.909,
-    "adj": 1.034,
-    "rank": 22
+    "adj": 1.032,
+    "rank": 19
    },
    "sack": {
     "v": 2.091,
-    "adj": 2.371,
-    "rank": 16
+    "adj": 2.365,
+    "rank": 17
    },
    "takeaway": {
     "v": 0.727,
-    "adj": 1.044,
+    "adj": 1.049,
     "rank": 24
    },
    "pass_epa": {
     "v": 0.051,
-    "adj": 0.039,
-    "rank": 17
+    "adj": 0.037,
+    "rank": 18
    },
    "rush_epa": {
     "v": 0.047,
-    "adj": 0.032,
-    "rank": 30
+    "adj": 0.034,
+    "rank": 29
    },
    "plays": {
     "v": 60.0,
-    "adj": 61.059,
+    "adj": 61.081,
     "rank": 13
    },
    "g": 11
@@ -802,211 +802,211 @@
   "JAX": {
    "pass_yds": {
     "v": 221.5,
-    "adj": 227.175,
-    "rank": 19
+    "adj": 225.281,
+    "rank": 21
    },
    "rush_yds": {
     "v": 90.6,
-    "adj": 100.735,
+    "adj": 101.441,
     "rank": 10
    },
    "cmp": {
     "v": 21.8,
-    "adj": 21.892,
-    "rank": 20
+    "adj": 21.802,
+    "rank": 21
    },
    "pass_td": {
     "v": 1.1,
-    "adj": 1.219,
+    "adj": 1.187,
     "rank": 6
    },
    "rush_td": {
     "v": 0.6,
-    "adj": 0.631,
+    "adj": 0.64,
     "rank": 6
    },
    "sack": {
     "v": 1.8,
-    "adj": 1.739,
+    "adj": 1.727,
     "rank": 30
    },
    "takeaway": {
     "v": 1.7,
-    "adj": 1.7,
-    "rank": 4
+    "adj": 1.701,
+    "rank": 5
    },
    "pass_epa": {
     "v": -0.11,
-    "adj": -0.087,
-    "rank": 6
+    "adj": -0.093,
+    "rank": 5
    },
    "rush_epa": {
     "v": -0.081,
-    "adj": -0.059,
+    "adj": -0.058,
     "rank": 2
    },
    "plays": {
     "v": 59.3,
-    "adj": 60.479,
+    "adj": 60.465,
     "rank": 7
    },
    "g": 10
   },
   "KC": {
    "pass_yds": {
-    "v": 208.3,
-    "adj": 234.72,
-    "rank": 26
+    "v": 195.182,
+    "adj": 217.944,
+    "rank": 13
    },
    "rush_yds": {
-    "v": 95.7,
-    "adj": 101.366,
+    "v": 102.091,
+    "adj": 104.414,
     "rank": 11
    },
    "cmp": {
-    "v": 21.1,
-    "adj": 22.783,
-    "rank": 27
+    "v": 20.091,
+    "adj": 21.769,
+    "rank": 19
    },
    "pass_td": {
-    "v": 0.8,
-    "adj": 1.116,
+    "v": 0.727,
+    "adj": 1.024,
     "rank": 3
    },
    "rush_td": {
-    "v": 0.6,
-    "adj": 0.731,
-    "rank": 8
+    "v": 0.636,
+    "adj": 0.67,
+    "rank": 7
    },
    "sack": {
     "v": 2.0,
-    "adj": 2.042,
+    "adj": 2.071,
     "rank": 23
    },
    "takeaway": {
-    "v": 1.4,
-    "adj": 1.357,
+    "v": 1.455,
+    "adj": 1.39,
     "rank": 14
    },
    "pass_epa": {
-    "v": -0.096,
-    "adj": -0.019,
-    "rank": 9
+    "v": -0.124,
+    "adj": -0.061,
+    "rank": 7
    },
    "rush_epa": {
-    "v": -0.069,
-    "adj": -0.041,
-    "rank": 6
+    "v": -0.042,
+    "adj": -0.028,
+    "rank": 12
    },
    "plays": {
-    "v": 62.6,
-    "adj": 64.368,
-    "rank": 27
+    "v": 62.909,
+    "adj": 64.239,
+    "rank": 28
    },
-   "g": 10
+   "g": 11
   },
   "LA": {
    "pass_yds": {
-    "v": 187.7,
-    "adj": 197.741,
+    "v": 187.818,
+    "adj": 192.826,
     "rank": 5
    },
    "rush_yds": {
-    "v": 96.8,
-    "adj": 100.571,
+    "v": 93.0,
+    "adj": 101.153,
     "rank": 9
    },
    "cmp": {
-    "v": 19.0,
-    "adj": 19.348,
-    "rank": 8
-   },
-   "pass_td": {
-    "v": 1.1,
-    "adj": 1.199,
+    "v": 18.818,
+    "adj": 18.973,
     "rank": 5
    },
+   "pass_td": {
+    "v": 1.091,
+    "adj": 1.127,
+    "rank": 4
+   },
    "rush_td": {
-    "v": 0.4,
-    "adj": 0.419,
+    "v": 0.364,
+    "adj": 0.436,
     "rank": 2
    },
    "sack": {
-    "v": 2.1,
-    "adj": 2.025,
-    "rank": 24
+    "v": 2.0,
+    "adj": 1.927,
+    "rank": 27
    },
    "takeaway": {
-    "v": 1.2,
-    "adj": 1.31,
-    "rank": 17
+    "v": 1.364,
+    "adj": 1.427,
+    "rank": 13
    },
    "pass_epa": {
-    "v": -0.124,
-    "adj": -0.112,
-    "rank": 3
+    "v": -0.133,
+    "adj": -0.129,
+    "rank": 2
    },
    "rush_epa": {
-    "v": -0.067,
-    "adj": -0.059,
-    "rank": 3
+    "v": -0.065,
+    "adj": -0.042,
+    "rank": 5
    },
    "plays": {
-    "v": 57.9,
-    "adj": 58.074,
-    "rank": 3
+    "v": 56.636,
+    "adj": 56.979,
+    "rank": 2
    },
-   "g": 10
+   "g": 11
   },
   "LAC": {
    "pass_yds": {
     "v": 227.7,
-    "adj": 219.47,
-    "rank": 15
+    "adj": 222.376,
+    "rank": 19
    },
    "rush_yds": {
     "v": 117.1,
-    "adj": 116.517,
+    "adj": 116.465,
     "rank": 18
    },
    "cmp": {
     "v": 20.3,
-    "adj": 19.877,
-    "rank": 12
+    "adj": 20.033,
+    "rank": 13
    },
    "pass_td": {
     "v": 1.6,
-    "adj": 1.5,
-    "rank": 13
+    "adj": 1.536,
+    "rank": 17
    },
    "rush_td": {
     "v": 1.3,
-    "adj": 1.274,
+    "adj": 1.288,
     "rank": 27
    },
    "sack": {
     "v": 1.6,
-    "adj": 1.972,
-    "rank": 27
+    "adj": 1.984,
+    "rank": 25
    },
    "takeaway": {
     "v": 1.4,
-    "adj": 1.534,
-    "rank": 8
+    "adj": 1.539,
+    "rank": 7
    },
    "pass_epa": {
     "v": 0.086,
-    "adj": 0.04,
-    "rank": 18
+    "adj": 0.046,
+    "rank": 19
    },
    "rush_epa": {
     "v": -0.002,
-    "adj": -0.003,
-    "rank": 18
+    "adj": -0.001,
+    "rank": 19
    },
    "plays": {
     "v": 61.1,
-    "adj": 60.949,
+    "adj": 60.955,
     "rank": 10
    },
    "g": 10
@@ -1014,8 +1014,8 @@
   "LV": {
    "pass_yds": {
     "v": 232.545,
-    "adj": 232.674,
-    "rank": 24
+    "adj": 235.254,
+    "rank": 26
    },
    "rush_yds": {
     "v": 151.182,
@@ -1024,86 +1024,86 @@
    },
    "cmp": {
     "v": 19.636,
-    "adj": 20.255,
-    "rank": 14
+    "adj": 20.391,
+    "rank": 15
    },
    "pass_td": {
     "v": 2.091,
-    "adj": 2.063,
+    "adj": 2.094,
     "rank": 30
    },
    "rush_td": {
     "v": 1.455,
-    "adj": 1.36,
+    "adj": 1.373,
     "rank": 28
    },
    "sack": {
     "v": 2.091,
-    "adj": 2.236,
+    "adj": 2.247,
     "rank": 18
    },
    "takeaway": {
     "v": 1.545,
-    "adj": 1.457,
+    "adj": 1.462,
     "rank": 11
    },
    "pass_epa": {
     "v": 0.152,
-    "adj": 0.124,
-    "rank": 28
+    "adj": 0.129,
+    "rank": 29
    },
    "rush_epa": {
     "v": 0.038,
-    "adj": 0.024,
+    "adj": 0.026,
     "rank": 27
    },
    "plays": {
     "v": 63.182,
-    "adj": 63.586,
-    "rank": 22
+    "adj": 63.585,
+    "rank": 23
    },
    "g": 11
   },
   "MIA": {
    "pass_yds": {
     "v": 212.9,
-    "adj": 198.399,
+    "adj": 199.952,
     "rank": 6
    },
    "rush_yds": {
     "v": 118.6,
-    "adj": 115.684,
+    "adj": 115.58,
     "rank": 17
    },
    "cmp": {
     "v": 20.7,
-    "adj": 20.396,
+    "adj": 20.449,
     "rank": 16
    },
    "pass_td": {
     "v": 1.8,
-    "adj": 1.553,
-    "rank": 17
+    "adj": 1.581,
+    "rank": 18
    },
    "rush_td": {
     "v": 0.8,
-    "adj": 0.738,
+    "adj": 0.744,
     "rank": 9
    },
    "sack": {
     "v": 1.6,
-    "adj": 1.844,
+    "adj": 1.863,
     "rank": 29
    },
    "takeaway": {
     "v": 1.1,
-    "adj": 1.187,
+    "adj": 1.186,
     "rank": 18
    },
    "pass_epa": {
     "v": 0.141,
-    "adj": 0.072,
-    "rank": 23
+    "adj": 0.078,
+    "rank": 25
    },
    "rush_epa": {
     "v": -0.013,
@@ -1112,113 +1112,113 @@
    },
    "plays": {
     "v": 60.2,
-    "adj": 60.794,
-    "rank": 8
+    "adj": 60.801,
+    "rank": 9
    },
    "g": 10
   },
   "MIN": {
    "pass_yds": {
     "v": 170.6,
-    "adj": 168.152,
+    "adj": 169.559,
     "rank": 2
    },
    "rush_yds": {
     "v": 110.3,
-    "adj": 105.423,
-    "rank": 14
+    "adj": 104.989,
+    "rank": 12
    },
    "cmp": {
     "v": 17.5,
-    "adj": 17.74,
+    "adj": 17.781,
     "rank": 1
    },
    "pass_td": {
     "v": 0.9,
-    "adj": 0.969,
+    "adj": 0.987,
     "rank": 2
    },
    "rush_td": {
     "v": 0.6,
-    "adj": 0.358,
+    "adj": 0.362,
     "rank": 1
    },
    "sack": {
     "v": 3.8,
-    "adj": 3.774,
+    "adj": 3.801,
     "rank": 1
    },
    "takeaway": {
     "v": 1.7,
-    "adj": 1.506,
-    "rank": 9
+    "adj": 1.481,
+    "rank": 10
    },
    "pass_epa": {
     "v": -0.095,
-    "adj": -0.11,
+    "adj": -0.101,
     "rank": 4
    },
    "rush_epa": {
     "v": -0.05,
-    "adj": -0.049,
-    "rank": 4
+    "adj": -0.054,
+    "rank": 3
    },
    "plays": {
     "v": 59.4,
-    "adj": 58.787,
-    "rank": 4
+    "adj": 58.971,
+    "rank": 5
    },
    "g": 10
   },
   "NE": {
    "pass_yds": {
     "v": 239.0,
-    "adj": 230.436,
-    "rank": 22
+    "adj": 231.124,
+    "rank": 23
    },
    "rush_yds": {
     "v": 106.6,
-    "adj": 106.023,
-    "rank": 15
+    "adj": 105.466,
+    "rank": 13
    },
    "cmp": {
     "v": 21.4,
-    "adj": 21.727,
+    "adj": 21.711,
     "rank": 18
    },
    "pass_td": {
     "v": 1.7,
-    "adj": 1.607,
-    "rank": 19
+    "adj": 1.617,
+    "rank": 20
    },
    "rush_td": {
     "v": 1.0,
-    "adj": 0.977,
-    "rank": 19
+    "adj": 0.976,
+    "rank": 18
    },
    "sack": {
     "v": 2.7,
-    "adj": 2.719,
-    "rank": 9
+    "adj": 2.732,
+    "rank": 8
    },
    "takeaway": {
     "v": 1.0,
-    "adj": 0.989,
+    "adj": 0.978,
     "rank": 25
    },
    "pass_epa": {
     "v": 0.121,
-    "adj": 0.078,
+    "adj": 0.084,
     "rank": 26
    },
    "rush_epa": {
     "v": -0.024,
-    "adj": -0.02,
+    "adj": -0.024,
     "rank": 14
    },
    "plays": {
     "v": 60.4,
-    "adj": 60.154,
+    "adj": 60.18,
     "rank": 6
    },
    "g": 10
@@ -1226,52 +1226,52 @@
   "NO": {
    "pass_yds": {
     "v": 224.4,
-    "adj": 223.712,
-    "rank": 17
+    "adj": 222.066,
+    "rank": 18
    },
    "rush_yds": {
     "v": 132.7,
-    "adj": 130.699,
+    "adj": 130.176,
     "rank": 27
    },
    "cmp": {
     "v": 20.3,
-    "adj": 20.276,
-    "rank": 15
+    "adj": 20.116,
+    "rank": 14
    },
    "pass_td": {
     "v": 1.5,
-    "adj": 1.623,
-    "rank": 20
+    "adj": 1.611,
+    "rank": 19
    },
    "rush_td": {
     "v": 1.3,
-    "adj": 1.266,
+    "adj": 1.249,
     "rank": 26
    },
    "sack": {
     "v": 2.8,
-    "adj": 2.523,
-    "rank": 12
+    "adj": 2.522,
+    "rank": 13
    },
    "takeaway": {
     "v": 1.2,
-    "adj": 1.145,
-    "rank": 19
+    "adj": 1.152,
+    "rank": 20
    },
    "pass_epa": {
     "v": 0.051,
-    "adj": 0.072,
-    "rank": 25
+    "adj": 0.071,
+    "rank": 23
    },
    "rush_epa": {
     "v": 0.021,
-    "adj": 0.025,
-    "rank": 28
+    "adj": 0.021,
+    "rank": 23
    },
    "plays": {
     "v": 64.4,
-    "adj": 63.408,
+    "adj": 63.29,
     "rank": 19
    },
    "g": 10
@@ -1279,191 +1279,191 @@
   "NYG": {
    "pass_yds": {
     "v": 193.4,
-    "adj": 190.219,
+    "adj": 189.47,
     "rank": 4
    },
    "rush_yds": {
     "v": 117.9,
-    "adj": 123.923,
+    "adj": 123.298,
     "rank": 24
    },
    "cmp": {
     "v": 20.4,
-    "adj": 19.19,
-    "rank": 5
+    "adj": 19.233,
+    "rank": 7
    },
    "pass_td": {
     "v": 1.8,
-    "adj": 1.688,
+    "adj": 1.675,
     "rank": 23
    },
    "rush_td": {
     "v": 0.7,
-    "adj": 0.833,
-    "rank": 13
+    "adj": 0.821,
+    "rank": 12
    },
    "sack": {
     "v": 2.0,
-    "adj": 2.201,
+    "adj": 2.18,
     "rank": 20
    },
    "takeaway": {
     "v": 1.5,
-    "adj": 1.697,
-    "rank": 5
+    "adj": 1.703,
+    "rank": 4
    },
    "pass_epa": {
     "v": -0.04,
-    "adj": -0.043,
-    "rank": 7
+    "adj": -0.049,
+    "rank": 9
    },
    "rush_epa": {
     "v": 0.013,
-    "adj": 0.011,
+    "adj": 0.013,
     "rank": 20
    },
    "plays": {
     "v": 61.5,
-    "adj": 60.856,
-    "rank": 9
+    "adj": 60.794,
+    "rank": 8
    },
    "g": 10
   },
   "NYJ": {
    "pass_yds": {
     "v": 188.273,
-    "adj": 182.995,
+    "adj": 184.349,
     "rank": 3
    },
    "rush_yds": {
     "v": 138.636,
-    "adj": 137.437,
+    "adj": 137.485,
     "rank": 30
    },
    "cmp": {
     "v": 18.182,
-    "adj": 18.635,
+    "adj": 18.669,
     "rank": 3
    },
    "pass_td": {
     "v": 1.727,
-    "adj": 1.779,
-    "rank": 27
+    "adj": 1.804,
+    "rank": 28
    },
    "rush_td": {
     "v": 1.273,
-    "adj": 1.179,
-    "rank": 25
+    "adj": 1.18,
+    "rank": 24
    },
    "sack": {
     "v": 2.636,
-    "adj": 2.527,
+    "adj": 2.542,
     "rank": 11
    },
    "takeaway": {
     "v": 1.0,
-    "adj": 0.861,
-    "rank": 27
+    "adj": 0.856,
+    "rank": 28
    },
    "pass_epa": {
     "v": 0.118,
-    "adj": 0.107,
+    "adj": 0.114,
     "rank": 27
    },
    "rush_epa": {
     "v": 0.027,
-    "adj": 0.038,
-    "rank": 31
+    "adj": 0.035,
+    "rank": 30
    },
    "plays": {
     "v": 62.273,
-    "adj": 62.452,
-    "rank": 15
+    "adj": 62.574,
+    "rank": 16
    },
    "g": 11
   },
   "PHI": {
    "pass_yds": {
-    "v": 222.8,
-    "adj": 213.008,
+    "v": 226.636,
+    "adj": 212.782,
     "rank": 10
    },
    "rush_yds": {
-    "v": 121.4,
-    "adj": 117.301,
-    "rank": 20
+    "v": 124.091,
+    "adj": 119.825,
+    "rank": 21
    },
    "cmp": {
-    "v": 21.0,
-    "adj": 20.023,
-    "rank": 13
+    "v": 20.818,
+    "adj": 19.596,
+    "rank": 10
    },
    "pass_td": {
-    "v": 1.4,
-    "adj": 1.295,
+    "v": 1.455,
+    "adj": 1.291,
     "rank": 10
    },
    "rush_td": {
-    "v": 1.0,
-    "adj": 0.989,
-    "rank": 20
+    "v": 1.182,
+    "adj": 1.109,
+    "rank": 23
    },
    "sack": {
-    "v": 2.1,
-    "adj": 2.242,
-    "rank": 17
+    "v": 2.182,
+    "adj": 2.375,
+    "rank": 16
    },
    "takeaway": {
-    "v": 0.4,
-    "adj": 0.487,
+    "v": 0.455,
+    "adj": 0.571,
     "rank": 32
    },
    "pass_epa": {
-    "v": 0.075,
-    "adj": 0.06,
-    "rank": 21
+    "v": 0.097,
+    "adj": 0.066,
+    "rank": 22
    },
    "rush_epa": {
-    "v": 0.038,
-    "adj": 0.004,
-    "rank": 19
+    "v": 0.035,
+    "adj": -0.003,
+    "rank": 17
    },
    "plays": {
-    "v": 66.1,
-    "adj": 64.193,
-    "rank": 26
+    "v": 66.273,
+    "adj": 64.077,
+    "rank": 25
    },
-   "g": 10
+   "g": 11
   },
   "PIT": {
    "pass_yds": {
     "v": 230.3,
-    "adj": 234.342,
-    "rank": 25
+    "adj": 232.449,
+    "rank": 24
    },
    "rush_yds": {
     "v": 84.9,
-    "adj": 91.903,
-    "rank": 4
+    "adj": 92.609,
+    "rank": 5
    },
    "cmp": {
     "v": 22.9,
-    "adj": 22.36,
-    "rank": 23
+    "adj": 22.27,
+    "rank": 26
    },
    "pass_td": {
     "v": 1.1,
-    "adj": 1.169,
-    "rank": 4
+    "adj": 1.137,
+    "rank": 5
    },
    "rush_td": {
     "v": 0.6,
-    "adj": 0.677,
-    "rank": 7
+    "adj": 0.687,
+    "rank": 8
    },
    "sack": {
     "v": 3.0,
-    "adj": 2.564,
+    "adj": 2.553,
     "rank": 10
    },
    "takeaway": {
@@ -1473,123 +1473,123 @@
    },
    "pass_epa": {
     "v": -0.004,
-    "adj": 0.04,
-    "rank": 19
+    "adj": 0.035,
+    "rank": 17
    },
    "rush_epa": {
     "v": -0.059,
-    "adj": -0.035,
+    "adj": -0.034,
     "rank": 10
    },
    "plays": {
     "v": 60.6,
-    "adj": 61.047,
-    "rank": 11
+    "adj": 61.033,
+    "rank": 12
    },
    "g": 10
   },
   "SEA": {
    "pass_yds": {
     "v": 149.4,
-    "adj": 149.431,
+    "adj": 148.913,
     "rank": 1
    },
    "rush_yds": {
     "v": 87.3,
-    "adj": 86.461,
+    "adj": 87.519,
     "rank": 2
    },
    "cmp": {
     "v": 19.5,
-    "adj": 19.258,
+    "adj": 19.179,
     "rank": 6
    },
    "pass_td": {
     "v": 0.9,
-    "adj": 0.849,
+    "adj": 0.847,
     "rank": 1
    },
    "rush_td": {
     "v": 0.8,
     "adj": 0.859,
-    "rank": 14
+    "rank": 13
    },
    "sack": {
     "v": 2.7,
-    "adj": 2.855,
-    "rank": 7
+    "adj": 2.846,
+    "rank": 6
    },
    "takeaway": {
     "v": 1.1,
-    "adj": 1.14,
-    "rank": 20
+    "adj": 1.156,
+    "rank": 19
    },
    "pass_epa": {
     "v": -0.104,
-    "adj": -0.116,
-    "rank": 2
+    "adj": -0.117,
+    "rank": 3
    },
    "rush_epa": {
     "v": -0.048,
     "adj": -0.047,
-    "rank": 5
+    "rank": 4
    },
    "plays": {
     "v": 59.0,
-    "adj": 58.824,
-    "rank": 5
+    "adj": 58.849,
+    "rank": 4
    },
    "g": 10
   },
   "SF": {
    "pass_yds": {
     "v": 228.6,
-    "adj": 236.229,
+    "adj": 236.7,
     "rank": 27
    },
    "rush_yds": {
     "v": 81.8,
-    "adj": 85.178,
+    "adj": 84.368,
     "rank": 1
    },
    "cmp": {
     "v": 24.7,
-    "adj": 24.982,
+    "adj": 25.043,
     "rank": 32
    },
    "pass_td": {
     "v": 1.6,
-    "adj": 1.659,
+    "adj": 1.664,
     "rank": 22
    },
    "rush_td": {
     "v": 0.5,
-    "adj": 0.618,
-    "rank": 5
+    "adj": 0.607,
+    "rank": 4
    },
    "sack": {
     "v": 1.7,
-    "adj": 2.011,
-    "rank": 25
+    "adj": 2.006,
+    "rank": 24
    },
    "takeaway": {
     "v": 1.7,
-    "adj": 1.76,
+    "adj": 1.765,
     "rank": 3
    },
    "pass_epa": {
     "v": 0.003,
-    "adj": 0.034,
-    "rank": 16
+    "adj": 0.032,
+    "rank": 15
    },
    "rush_epa": {
     "v": -0.086,
-    "adj": -0.077,
+    "adj": -0.075,
     "rank": 1
    },
    "plays": {
     "v": 63.0,
-    "adj": 63.446,
+    "adj": 63.333,
     "rank": 20
    },
    "g": 10
@@ -1597,105 +1597,105 @@
   "TB": {
    "pass_yds": {
     "v": 220.1,
-    "adj": 202.948,
+    "adj": 202.071,
     "rank": 7
    },
    "rush_yds": {
     "v": 84.3,
-    "adj": 88.461,
+    "adj": 87.703,
     "rank": 3
    },
    "cmp": {
     "v": 21.0,
-    "adj": 19.613,
-    "rank": 10
+    "adj": 19.561,
+    "rank": 9
    },
    "pass_td": {
     "v": 1.4,
-    "adj": 1.255,
-    "rank": 7
+    "adj": 1.254,
+    "rank": 8
    },
    "rush_td": {
     "v": 0.5,
-    "adj": 0.499,
+    "adj": 0.474,
     "rank": 3
    },
    "sack": {
     "v": 1.8,
-    "adj": 1.682,
+    "adj": 1.681,
     "rank": 31
    },
    "takeaway": {
     "v": 2.0,
-    "adj": 2.017,
+    "adj": 2.011,
     "rank": 1
    },
    "pass_epa": {
     "v": -0.126,
-    "adj": -0.144,
+    "adj": -0.143,
     "rank": 1
    },
    "rush_epa": {
     "v": -0.005,
-    "adj": -0.007,
-    "rank": 17
+    "adj": -0.011,
+    "rank": 15
    },
    "plays": {
     "v": 58.3,
-    "adj": 57.283,
-    "rank": 2
+    "adj": 57.304,
+    "rank": 3
    },
    "g": 10
   },
   "TEN": {
    "pass_yds": {
     "v": 272.7,
-    "adj": 266.571,
+    "adj": 264.727,
     "rank": 32
    },
    "rush_yds": {
     "v": 128.0,
-    "adj": 136.221,
+    "adj": 136.568,
     "rank": 28
    },
    "cmp": {
     "v": 24.6,
-    "adj": 24.127,
+    "adj": 24.087,
     "rank": 30
    },
    "pass_td": {
     "v": 1.8,
-    "adj": 1.745,
-    "rank": 26
+    "adj": 1.715,
+    "rank": 25
    },
    "rush_td": {
     "v": 1.4,
-    "adj": 1.448,
+    "adj": 1.443,
     "rank": 32
    },
    "sack": {
     "v": 2.1,
-    "adj": 1.992,
+    "adj": 1.967,
     "rank": 26
    },
    "takeaway": {
     "v": 1.2,
-    "adj": 1.329,
-    "rank": 15
+    "adj": 1.33,
+    "rank": 16
    },
    "pass_epa": {
     "v": 0.222,
-    "adj": 0.199,
-    "rank": 32
+    "adj": 0.193,
+    "rank": 31
    },
    "rush_epa": {
     "v": 0.007,
-    "adj": 0.019,
-    "rank": 23
+    "adj": 0.021,
+    "rank": 24
    },
    "plays": {
     "v": 66.6,
-    "adj": 66.873,
+    "adj": 66.839,
     "rank": 31
    },
    "g": 10
@@ -1703,52 +1703,52 @@
   "WAS": {
    "pass_yds": {
     "v": 248.4,
-    "adj": 244.081,
-    "rank": 30
+    "adj": 242.111,
+    "rank": 29
    },
    "rush_yds": {
     "v": 97.3,
-    "adj": 101.562,
-    "rank": 12
+    "adj": 101.121,
+    "rank": 8
    },
    "cmp": {
     "v": 24.5,
-    "adj": 23.891,
+    "adj": 23.915,
     "rank": 29
    },
    "pass_td": {
     "v": 1.9,
-    "adj": 1.781,
-    "rank": 28
+    "adj": 1.751,
+    "rank": 27
    },
    "rush_td": {
     "v": 0.9,
-    "adj": 0.83,
-    "rank": 12
+    "adj": 0.817,
+    "rank": 11
    },
    "sack": {
     "v": 2.1,
-    "adj": 2.178,
+    "adj": 2.142,
     "rank": 21
    },
    "takeaway": {
     "v": 1.4,
-    "adj": 1.366,
-    "rank": 13
+    "adj": 1.372,
+    "rank": 15
    },
    "pass_epa": {
     "v": 0.043,
-    "adj": 0.022,
-    "rank": 14
+    "adj": 0.013,
+    "rank": 13
    },
    "rush_epa": {
     "v": 0.021,
-    "adj": 0.021,
-    "rank": 25
+    "adj": 0.025,
+    "rank": 26
    },
    "plays": {
     "v": 64.3,
-    "adj": 63.684,
+    "adj": 63.672,
     "rank": 24
    },
    "g": 10
