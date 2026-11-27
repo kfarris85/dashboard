@@ -400,7 +400,7 @@ a{color:var(--home)}
 (function(){
 'use strict';
 const PROXY=location.hostname==='localhost'||location.hostname==='127.0.0.1';
-const BUILD='2026-11-25-cache1';
+const BUILD='2026-11-26-wxwarn1';
 /* Phones keep an old copy of this page for a while: check for a newer build and offer a one-tap update */
 async function checkBuild(){
   try{ const r=await fetch(location.pathname,{cache:'no-cache'}); /* revalidates: unchanged page = tiny 304 reply */ if(!r.ok) return;
@@ -682,7 +682,7 @@ async function loadWx(g){
   try{ const day=hour.slice(0,10);
     const d=await getJSON(`${WX}latitude=${p.lat}&longitude=${p.lon}&hourly=temperature_2m,precipitation_probability,wind_speed_10m,wind_gusts_10m,weather_code&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=GMT&start_date=${day}&end_date=${day}`);
     const i=(d.hourly&&d.hourly.time||[]).indexOf(hour); if(i<0) return false;
-    const h=d.hourly; S.wx[g.id]={key,temp:Math.round(h.temperature_2m[i]),rain:h.precipitation_probability[i],wind:Math.round(h.wind_speed_10m[i]),gust:Math.round(h.wind_gusts_10m[i]),sky:WMO[h.weather_code[i]]||''};
+    const h=d.hourly; S.wx[g.id]={key,temp:Math.round(h.temperature_2m[i]),rain:h.precipitation_probability[i],wind:Math.round(h.wind_speed_10m[i]),gust:Math.round(h.wind_gusts_10m[i]),sky:WMO[h.weather_code[i]]||'',code:h.weather_code[i]};
     return true; }catch(e){ return false; }
 }
 async function enrich(tok){
@@ -691,7 +691,7 @@ async function enrich(tok){
   for(const g of evs){
     const big=evs.length>40, key=!big||S.open.has(g.id)||(g.away.rank>0&&g.away.rank<=25)||(g.home.rank>0&&g.home.rank<=25)||!!findPick(g)||(S.filter!=='all'&&visible(g));
     if((g.state==='in'&&key)||S.open.has(g.id)||small) jobs.push(()=>loadSummary(g).then(ch=>ch&&tok===S.token&&repaint(g.id)));
-    if(evs.length<=40||S.open.has(g.id)) jobs.push(()=>loadWx(g).then(ch=>ch&&tok===S.token&&repaint(g.id)));
+    if(evs.length<=40||S.open.has(g.id)) jobs.push(()=>loadWx(g).then(ch=>{ if(ch&&tok===S.token){ repaint(g.id); renderAlerts(); } }));
   }
   let i=0; const run=async()=>{while(i<jobs.length&&tok===S.token){const j=jobs[i++]; try{await j()}catch(e){}}};
   await Promise.all([run(),run(),run(),run()]);
@@ -770,6 +770,26 @@ function wxText(g){
   const flag=(w.wind>=15||w.gust>=25)?' <span class="wx-flag">Windy</span>':(w.rain>=50?' <span class="wx-flag">Rain likely</span>':'');
   return `<span>${w.temp}°F ${esc(w.sky)} · Wind ${w.wind} mph${w.gust>w.wind+5?` (gusts ${w.gust})`:''} · Rain ${w.rain}%${flag}</span>`;
 }
+// Bad-weather warning for outdoor games — picks the single most relevant
+// condition to flag (storms/snow/ice beat wind/rain/temp) so the badge stays
+// scannable rather than listing every threshold that happens to be crossed.
+function wxWarn(g){
+  if(LEAGUES[S.league].wx===false||g.indoor) return null;
+  const w=S.wx[g.id]; if(!w) return null;
+  const c=w.code;
+  if(c===95||c===96||c===99) return {lab:'⚡ Storms',det:`Thunderstorms in the forecast · ${w.temp}°F`};
+  if([71,73,75,77,85,86].includes(c)) return {lab:'❄️ Snow',det:`${w.sky} expected · ${w.temp}°F`};
+  if([56,57,66,67].includes(c)) return {lab:'🧊 Ice',det:`Freezing precipitation · ${w.temp}°F`};
+  if(w.wind>=15||w.gust>=25) return {lab:'💨 High wind',det:`Wind ${w.wind} mph${w.gust>w.wind+5?` (gusts ${w.gust})`:''}`};
+  if(w.rain>=50) return {lab:'🌧️ Rain likely',det:`${w.rain}% chance of rain`};
+  if(w.temp<=25) return {lab:'🥶 Extreme cold',det:`${w.temp}°F`};
+  if(w.temp>=100) return {lab:'🥵 Extreme heat',det:`${w.temp}°F`};
+  return null;
+}
+function wxWarnBadge(g){
+  const x=wxWarn(g); if(!x) return '';
+  return `<span class="mv bad" title="${esc(x.det)}">${x.lab}</span>`;
+}
 function injCount(g){
   const s=S.sum[g.id]; if(!s||!s.inj||!s.inj.length) return '';
   const parts=s.inj.map(t=>{const n=t.list.filter(i=>/out|injured reserve|doubtful/i.test(i.status)).length; return n?`${esc(t.abbr)} ${n}`:''}).filter(Boolean);
@@ -783,7 +803,7 @@ function card(g){
   <div class="g-top"><span class="status">${esc(status)}</span><span class="g-tr"><span>${esc(g.tv)}</span>${g.state!=='post'?mvBtn(S.league,g):''}</span></div>
   <div class="teams">${trow(g.away,g,p)}${trow(g.home,g,p)}</div>
   ${sitHTML(g)}${wpHTML(g)}${modelHTML(g,p)}
-  <div class="meta">${line?`<span>${esc(line)}</span>`:''}${wxText(g)}${injCount(g)}${p?mlBadge(p):''}</div>
+  <div class="meta">${line?`<span>${esc(line)}</span>`:''}${wxText(g)}${wxWarnBadge(g)}${injCount(g)}${p?mlBadge(p):''}</div>
   ${(()=>{const sb=slipBtn(S.league,g);return sb?`<div class="g-acts">${sb}</div>`:'';})()}
   <button class="more" type="button" data-more="${g.id}" aria-expanded="${open}">${open?'Hide details':'Details · stats · injuries'}</button>
   ${open?detail(g,p):''}
@@ -819,7 +839,8 @@ function detail(g,p){
     out.push(`<div><h4>Injury report</h4><div class="injcols">${s.inj.map(t=>`<div><b>${esc(t.abbr)}</b><ul>${t.list.slice(0,12).map(i=>`<li>${esc(i.name)} <span>${esc(i.pos)}</span> · <span class="${cls(i.status)}">${esc(i.status)}</span>${i.what?` <span>(${esc(i.what)})</span>`:''}</li>`).join('')||'<li><span>None listed</span></li>'}${t.list.length>12?`<li><span>+${t.list.length-12} more</span></li>`:''}</ul></div>`).join('')}</div></div>`);
   } else out.push('<div><h4>Injury report</h4><p class="muted">None posted yet.</p></div>');
   const v=g.venue; const w=S.wx[g.id];
-  out.push(`<div><h4>Venue</h4><p>${esc(v&&v.fullName||'')}${v&&v.address?` · ${esc(v.address.city||'')}${v.address.state?', '+esc(v.address.state):''}`:''}${g.indoor?' · Indoors':''}${g.neutral?' · Neutral site':''}</p>${w&&!g.indoor?`<p class="muted">${g.state==='in'?'Now':'At kickoff'}: ${w.temp}°F, ${esc(w.sky)}, wind ${w.wind} mph, gusts ${w.gust} mph, rain chance ${w.rain}%</p>`:''}<p style="margin-top:6px"><a href="https://www.espn.com/${L.web}/game/_/gameId/${g.id}" target="_blank" rel="noopener">Open on ESPN</a></p></div>`);
+  const ww=wxWarn(g);
+  out.push(`<div><h4>Venue</h4><p>${esc(v&&v.fullName||'')}${v&&v.address?` · ${esc(v.address.city||'')}${v.address.state?', '+esc(v.address.state):''}`:''}${g.indoor?' · Indoors':''}${g.neutral?' · Neutral site':''}</p>${w&&!g.indoor?`<p class="muted">${g.state==='in'?'Now':'At kickoff'}: ${w.temp}°F, ${esc(w.sky)}, wind ${w.wind} mph, gusts ${w.gust} mph, rain chance ${w.rain}%</p>`:''}${ww?`<p class="wx-flag" style="font-weight:700">${ww.lab} — ${esc(ww.det)}</p>`:''}<p style="margin-top:6px"><a href="https://www.espn.com/${L.web}/game/_/gameId/${g.id}" target="_blank" rel="noopener">Open on ESPN</a></p></div>`);
   return `<div class="detail">${out.join('')}</div>`;
 }
 
@@ -831,7 +852,7 @@ document.addEventListener('click',e=>{
   else if(t.dataset.f){ S.filter=t.dataset.f; render(); }
   else if(t.dataset.more){ const id=t.dataset.more; if(S.open.has(id)) S.open.delete(id); else S.open.add(id);
     const g=S.events.find(x=>x.id===id); repaint(id);
-    if(g&&S.open.has(id)){ const tok=S.token; Promise.all([loadSummary(g),loadWx(g)]).then(()=>tok===S.token&&repaint(id)); } }
+    if(g&&S.open.has(id)){ const tok=S.token; Promise.all([loadSummary(g),loadWx(g)]).then(()=>{ if(tok===S.token){ repaint(id); renderAlerts(); } }); } }
 });
 function step(dir){
   const L=LEAGUES[S.league];
@@ -1440,7 +1461,7 @@ function mvTile(x){
     ${head}
     <div class="teams">${trow(g.away,g,p)}${trow(g.home,g,p)}</div>
     ${sitHTML(g)}${wpHTML(g)}${modelHTML(g,p)}
-    <div class="meta">${line?`<span>${esc(line)}</span>`:''}${wxText(g)}${injCount(g)}${p?mlBadge(p):''}</div>
+    <div class="meta">${line?`<span>${esc(line)}</span>`:''}${wxText(g)}${wxWarnBadge(g)}${injCount(g)}${p?mlBadge(p):''}</div>
     ${(()=>{const sb=slipBtn(x.lg,g);return sb?`<div class="g-acts">${sb}</div>`:'';})()}
   </article>`;
   S.league=savedLg;
@@ -1645,6 +1666,8 @@ function isLate(g){
 function buildAlerts(evs,lg){
   const out=[]; const nm=t=>esc(t.abbr||t.short||t.name||'');
   for(const g of evs){
+    if(g.state!=='post'){ const ww=wxWarn(g);
+      if(ww) out.push({sev:1.5,cls:'al-bad',id:g.id,txt:`${ww.lab} — ${nm(g.away)} @ ${nm(g.home)} · ${esc(ww.det)}`}); }
     if(g.state!=='in') continue;
     const hs=parseFloat(g.home.score), as=parseFloat(g.away.score); if(isNaN(hs)||isNaN(as)) continue;
     const late=isLate(g), p=findPick(g,lg);
@@ -2002,7 +2025,7 @@ document.addEventListener('click',e=>{
     const tb=$('tabs').querySelector('[data-l="slip"]'); if(tb) tb.innerHTML=slipTabLabel(); return; }
   if(t.dataset.ppgo){ const v=($('ppq')&&$('ppq').value||'').trim(); if(v.length>=2) propFind(v); return; }
   if(t.dataset.jump){ const id=t.dataset.jump; if(!S.open.has(id)){ S.open.add(id); const g=S.events.find(x=>x.id===id); repaint(id);
-      if(g){ const tok=S.token; Promise.all([loadSummary(g),loadWx(g)]).then(()=>tok===S.token&&repaint(id)); } }
+      if(g){ const tok=S.token; Promise.all([loadSummary(g),loadWx(g)]).then(()=>{ if(tok===S.token){ repaint(id); renderAlerts(); } }); } }
     const el=document.querySelector('[data-id="'+id+'"]'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); return; }
 });
 function slipTabLabel(){ const n=S.slip.legs.length; return '\u{1F3AB} Slip'+(n?` <span class="mvn">${n}</span>`:''); }
